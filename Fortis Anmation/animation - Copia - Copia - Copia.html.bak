@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>FORTIS - Circuit Energy</title>
+
+<style>
+body{
+    margin:0;
+    background:#f0f2f5;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    overflow:hidden;
+    font-family:Segoe UI;
+}
+
+.container{
+    position:relative;
+    width:1000px;
+}
+
+img{
+    width:100%;
+    display:block;
+}
+
+svg{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+
+path{
+    fill:none;
+    stroke-linecap:round;
+    stroke-width:6;
+}
+
+.green{
+    stroke:#32cd32;
+    filter:drop-shadow(0 0 6px #32cd32);
+}
+
+.orange{
+    stroke:#ff7f00;
+    filter:drop-shadow(0 0 6px #ff7f00);
+}
+
+.particle{
+    r:6;
+    filter:drop-shadow(0 0 8px currentColor);
+}
+.status{
+    position:absolute;
+    bottom:-60px;
+    width:100%;
+    text-align:center;
+    font-size:18px;
+    letter-spacing:3px;
+    color:#0e2a47;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<img src="fortis.png">
+
+<svg viewBox="0 0 1000 700">
+
+    <!-- LINEE SINISTRA -->
+    <path id="g1" class="green" d="M0 350 L300 350 L360 320"/>
+    <path id="o1" class="orange" d="M0 400 L300 400 L360 380"/>
+
+    <!-- LINEE DESTRA -->
+    <path id="g2" class="green" d="M1000 350 L700 350 L640 320"/>
+    <path id="o2" class="orange" d="M1000 420 L700 420 L640 400"/>
+
+    <!-- LINEE ALTO -->
+    <path id="g3" class="green" d="M500 0 L500 200"/>
+    <path id="o3" class="orange" d="M460 0 L460 200"/>
+
+    <!-- LINEE BASSO -->
+    <path id="g4" class="green" d="M520 700 L520 500"/>
+    <path id="o4" class="orange" d="M480 700 L480 500"/>
+
+    <!-- PARTICELLE -->
+    <circle class="particle green" fill="#32cd32">
+        <animateMotion dur="2s" repeatCount="indefinite">
+            <mpath href="#g1"/>
+        </animateMotion>
+    </circle>
+
+    <circle class="particle orange" fill="#ff7f00">
+        <animateMotion dur="2.5s" repeatCount="indefinite">
+            <mpath href="#o1"/>
+        </animateMotion>
+    </circle>
+
+    <circle class="particle green" fill="#32cd32">
+        <animateMotion dur="2s" repeatCount="indefinite">
+            <mpath href="#g2"/>
+        </animateMotion>
+    </circle>
+
+    <circle class="particle orange" fill="#ff7f00">
+        <animateMotion dur="2.5s" repeatCount="indefinite">
+            <mpath href="#o2"/>
+        </animateMotion>
+    </circle>
+
+    <circle class="particle green" fill="#32cd32">
+        <animateMotion dur="3s" repeatCount="indefinite">
+            <mpath href="#g3"/>
+        </animateMotion>
+    </circle>
+
+    <circle class="particle orange" fill="#ff7f00">
+        <animateMotion dur="3s" repeatCount="indefinite">
+            <mpath href="#o4"/>
+        </animateMotion>
+    </circle>
+
+</svg>
+
+<div class="status">
+SINCRONIZZAZIONE STRUMENTAZIONE IN CORSO...
+</div>
+
+</div>
+
+</body>
+</html>

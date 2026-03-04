@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>FORTIS - Instruments Connection</title>
+
+<style>
+body{
+    margin:0;
+    background:#eef1f4;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family:Segoe UI, sans-serif;
+}
+
+.container{
+    position:relative;
+    width:900px;
+    text-align:center;
+}
+
+/* Immagine base leggermente desaturata */
+.base{
+    width:100%;
+    display:block;
+    filter: grayscale(40%) brightness(0.9);
+}
+
+/* Overlay blu isolato con blend */
+.blue-layer{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    animation: pulse 3s ease-in-out infinite;
+    mix-blend-mode: multiply;
+}
+
+/* Animazione pulsazione */
+@keyframes pulse{
+    0%{
+        transform:scale(1);
+        filter: brightness(1);
+        opacity:0.9;
+    }
+    50%{
+        transform:scale(1.03);
+        filter: brightness(1.4);
+        opacity:1;
+    }
+    100%{
+        transform:scale(1);
+        filter: brightness(1);
+        opacity:0.9;
+    }
+}
+
+.status{
+    margin-top:40px;
+    font-size:22px;
+    letter-spacing:3px;
+    color:#0e2a47;
+    animation: fadeDots 2s infinite;
+}
+
+@keyframes fadeDots{
+    0%{ opacity:0.6; }
+    50%{ opacity:1; }
+    100%{ opacity:0.6; }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Base attenuata -->
+    <img src="fortis.png" class="base">
+
+    <!-- Overlay pulsante -->
+    <img src="fortis.png" class="blue-layer">
+
+    <div class="status">
+        Instruments connection ...
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Connecting Instruments – FORTIS</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 100vw; height: 100vh; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background-color: #e4e4e4;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.c { position: fixed; width: 10px; height: 10px; background: #1e6ed4; }
+.c.tl { top:16px;  left:16px;  }
+.c.tr { top:16px;  right:16px; }
+.c.bl { bottom:16px; left:16px;  }
+.c.br { bottom:16px; right:16px; }
+
+.card {
+  display:flex; flex-direction:column; align-items:center; gap:30px;
+  padding: 44px 56px;
+  background: rgba(238,238,238,0.6);
+  border-radius: 8px;
+}
+
+.trace { fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+.trace.o { stroke:#e07020; }
+.trace.y { stroke:#d4a800; }
+.trace.g { stroke:#6aaa1a; }
+
+@keyframes draw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+
+.logo-wrap {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center;
+  pointer-events:none;
+}
+.brand {
+  margin-top:10px; font-size:26px; font-weight:900;
+  letter-spacing:6px; color:#1a2d52;
+}
+
+.prog-area { width:300px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.track { width:100%; height:5px; background:#bbb; border-radius:3px; overflow:hidden; }
+.fill {
+  height:100%;
+  background: linear-gradient(90deg,#1a2d52,#2e7cd6);
+  box-shadow:0 0 8px rgba(46,124,214,.6);
+  animation: prog 3.5s ease-in-out infinite;
+}
+@keyframes prog { 0%{width:0} 75%{width:90%} 100%{width:100%} }
+
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinner {
+  width:34px; height:34px;
+  border:3px solid #ccc; border-top-color:#1a2d52;
+  border-radius:50%;
+  animation:spin 0.9s linear infinite;
+}
+
+.status { font-size:14px; color:#444; font-style:italic; }
+.dots::after { content:''; animation: dotanim 1.6s steps(4,end) infinite; }
+@keyframes dotanim {
+  0%  { content:'';    }
+  25% { content:'.';   }
+  50% { content:'..';  }
+  75% { content:'...'; }
+  100%{ content:'';    }
+}
+</style>
+</head>
+<body>
+
+<div class="c tl"></div><div class="c tr"></div>
+<div class="c bl"></div><div class="c br"></div>
+
+<div class="card">
+
+  <div style="position:relative;width:400px;height:280px;">
+
+    <svg id="sc" viewBox="0 0 400 280" width="400" height="280"
+         style="position:absolute;top:0;left:0;overflow:visible;"
+         xmlns="http://www.w3.org/2000/svg">
+
+      <!-- LEFT orange -->
+      <path id="p0" class="trace o" d="M158,130 H118 L103,115 H58 L42,115 H8"/>
+      <circle cx="8"  cy="115" r="5" fill="none" stroke="#e07020" stroke-width="2.5"/>
+      <rect   x="54" y="111"  width="8" height="8" fill="#e07020" rx="1"/>
+
+      <path id="p1" class="trace o" d="M158,145 H115 L100,160 H55 L40,160 H8"/>
+      <circle cx="8"  cy="160" r="5" fill="none" stroke="#e07020" stroke-width="2.5"/>
+      <rect   x="51" y="156"  width="8" height="8" fill="#e07020" rx="1"/>
+
+      <path id="p2" class="trace o" d="M158,160 H118 L103,175 H8"/>
+      <circle cx="8"  cy="175" r="5" fill="none" stroke="#e07020" stroke-width="2.5"/>
+
+      <!-- LEFT green -->
+      <path id="p3" class="trace g" d="M158,115 H122 L107,100 H62 L47,100 H8"/>
+      <circle cx="8"  cy="100" r="5" fill="none" stroke="#6aaa1a" stroke-width="2.5"/>
+      <rect   x="58" y="96"   width="8" height="8" fill="#6aaa1a" rx="1"/>
+
+      <path id="p4" class="trace g" d="M158,100 H126 L111,85 H60 L45,85 H8"/>
+      <circle cx="8"  cy="85"  r="5" fill="none" stroke="#6aaa1a" stroke-width="2.5"/>
+
+      <!-- RIGHT yellow -->
+      <path id="p5" class="trace y" d="M242,130 H278 L293,115 H338 L353,115 H392"/>
+      <circle cx="392" cy="115" r="5" fill="none" stroke="#d4a800" stroke-width="2.5"/>
+      <rect   x="334" y="111"  width="8" height="8" fill="#d4a800" rx="1"/>
+
+      <path id="p6" class="trace y" d="M242,145 H282 L297,160 H342 L357,160 H392"/>
+      <circle cx="392" cy="160" r="5" fill="none" stroke="#d4a800" stroke-width="2.5"/>
+      <rect   x="338" y="156"  width="8" height="8" fill="#d4a800" rx="1"/>
+
+      <path id="p7" class="trace y" d="M242,160 H280 L295,175 H392"/>
+      <circle cx="392" cy="175" r="5" fill="none" stroke="#d4a800" stroke-width="2.5"/>
+
+      <!-- RIGHT green -->
+      <path id="p8" class="trace g" d="M242,115 H276 L291,100 H336 L351,100 H392"/>
+      <circle cx="392" cy="100" r="5" fill="none" stroke="#6aaa1a" stroke-width="2.5"/>
+      <rect   x="332" y="96"   width="8" height="8" fill="#6aaa1a" rx="1"/>
+
+      <path id="p9" class="trace g" d="M242,100 H274 L289,85 H338 L353,85 H392"/>
+      <circle cx="392" cy="85"  r="5" fill="none" stroke="#6aaa1a" stroke-width="2.5"/>
+
+      <!-- TOP -->
+      <path id="p10" class="trace y" d="M195,75 V48 L205,38 V8"/>
+      <circle cx="205" cy="8"  r="5" fill="none" stroke="#d4a800" stroke-width="2.5"/>
+      <rect   x="201" y="34"   width="8" height="8" fill="#d4a800" rx="1"/>
+
+      <path id="p11" class="trace g" d="M205,75 V50 L220,35 V8"/>
+      <circle cx="220" cy="8"  r="5" fill="none" stroke="#6aaa1a" stroke-width="2.5"/>
+
+      <path id="p12" class="trace o" d="M185,75 V46 L170,31 V8"/>
+      <circle cx="170" cy="8"  r="5" fill="none" stroke="#e07020" stroke-width="2.5"/>
+
+      <!-- BOTTOM -->
+      <path id="p13" class="trace o" d="M185,205 V232 L170,247 V272"/>
+      <circle cx="170" cy="272" r="5" fill="none" stroke="#e07020" stroke-width="2.5"/>
+      <rect   x="166" y="228"  width="8" height="8" fill="#e07020" rx="1"/>
+
+      <path id="p14" class="trace g" d="M205,205 V234 L220,249 V272"/>
+      <circle cx="220" cy="272" r="5" fill="none" stroke="#6aaa1a" stroke-width="2.5"/>
+
+      <path id="p15" class="trace y" d="M195,205 V230 H200 L210,240 V272"/>
+      <circle cx="210" cy="272" r="5" fill="none" stroke="#d4a800" stroke-width="2.5"/>
+      <rect   x="191" y="226"  width="8" height="8" fill="#d4a800" rx="1"/>
+
+    </svg>
+
+    <!-- Logo FORTIS centrato -->
+    <div class="logo-wrap">
+      <svg width="76" height="64" viewBox="0 0 76 64" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(11,9)" opacity="0.3">
+          <rect x="0" y="0"  width="44" height="9"  rx="1" fill="#1a2d52"/>
+          <rect x="0" y="0"  width="9"  height="54" rx="1" fill="#1a2d52"/>
+          <rect x="0" y="23" width="30" height="8"  rx="1" fill="#1a2d52"/>
+        </g>
+        <g>
+          <rect x="0" y="0"  width="44" height="9"  rx="1" fill="#1a2d52"/>
+          <rect x="0" y="0"  width="9"  height="54" rx="1" fill="#1a2d52"/>
+          <rect x="0" y="23" width="30" height="8"  rx="1" fill="#1a2d52"/>
+        </g>
+      </svg>
+      <span class="brand">FORTIS</span>
+    </div>
+
+  </div>
+
+  <div class="prog-area">
+    <div class="track"><div class="fill"></div></div>
+    <div class="spinner"></div>
+    <p class="status">Connecting Instruments in progress<span class="dots"></span></p>
+  </div>
+
+</div>
+
+<script>
+window.addEventListener('load', function () {
+  var LOOP_MS = 4000;
+  var paths = document.querySelectorAll('path[id^="p"]');
+
+  function animatePath(path, delay, len) {
+    path.style.setProperty('--len', len + 'px');
+    path.style.strokeDasharray  = len;
+    path.style.strokeDashoffset = len;
+    path.style.animation = 'none';
+    void path.getBoundingClientRect();
+    path.style.animation = 'draw 1.0s ' + delay + 'ms ease forwards';
+  }
+
+  function runCycle() {
+    paths.forEach(function (path, i) {
+      var len = path.getTotalLength() || 300;
+      animatePath(path, i * 100, len);
+    });
+  }
+
+  runCycle();
+  setInterval(runCycle, LOOP_MS);
+});
+</script>
+</body>
+</html>

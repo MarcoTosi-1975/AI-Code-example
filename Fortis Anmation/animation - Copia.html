@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>FORTIS - Inizializzazione</title>
+<style>
+body{
+    margin:0;
+    height:100vh;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+    font-family:Consolas;
+}
+
+.container{
+    position:relative;
+    width:900px;
+}
+
+img{
+    width:100%;
+    display:block;
+    filter:brightness(0.4) contrast(1.2);
+}
+
+.glow{
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle at center,
+        rgba(30,144,255,0.4),
+        transparent 60%);
+    animation:glowPulse 3s infinite ease-in-out;
+    pointer-events:none;
+}
+
+@keyframes glowPulse{
+    0%,100%{ opacity:0.6; }
+    50%{ opacity:1; }
+}
+
+.status{
+    position:absolute;
+    bottom:-70px;
+    width:100%;
+    text-align:center;
+    font-size:18px;
+    color:#00ff88;
+    letter-spacing:3px;
+    animation:blink 1.5s infinite;
+}
+
+@keyframes blink{
+    0%,100%{ opacity:1; }
+    50%{ opacity:0.4; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+    <img src="fortis.png">
+    <div class="glow"></div>
+    <div class="status">
+        INIZIALIZZAZIONE BANCO DI COLLAUDO...
+    </div>
+</div>
+</body>
+</html>
