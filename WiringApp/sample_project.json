@@ -1,0 +1,91 @@
+{
+  "project": "Demo Impianto Cablaggio",
+  "version": "1.0",
+  "wireTypes": [
+    { "id": "w_red",    "name": "Rosso 1mm²",   "color": "#ef5350", "section": "1mm²",   "voltage": "24V",  "notes": "Alimentazione positiva" },
+    { "id": "w_black",  "name": "Nero 1mm²",    "color": "#424242", "section": "1mm²",   "voltage": "24V",  "notes": "Alimentazione negativa/GND" },
+    { "id": "w_yellow", "name": "Giallo 1.5mm²","color": "#fdd835", "section": "1.5mm²", "voltage": "230V", "notes": "Fase AC" },
+    { "id": "w_blue",   "name": "Blu 1.5mm²",   "color": "#1e88e5", "section": "1.5mm²", "voltage": "230V", "notes": "Neutro AC" },
+    { "id": "w_green",  "name": "Verde/Giallo",  "color": "#66bb6a", "section": "2.5mm²", "voltage": "PE",   "notes": "Terra" },
+    { "id": "w_grey",   "name": "Grigio 0.5mm²", "color": "#90a4ae", "section": "0.5mm²", "voltage": "Segnale", "notes": "Segnale analogico/digitale" },
+    { "id": "w_orange", "name": "Arancio CAN",   "color": "#ff9800", "section": "0.5mm²", "voltage": "CAN",  "notes": "Bus CAN H" },
+    { "id": "w_white",  "name": "Bianco CAN",    "color": "#eeeeee", "section": "0.5mm²", "voltage": "CAN",  "notes": "Bus CAN L" }
+  ],
+  "clusters": {
+    "left": [
+      {
+        "id": "cl_J1", "name": "Connettore J1", "icon": "🔌", "description": "Connettore principale morsettiera 24VDC",
+        "pins": [
+          { "id": "p1",  "name": "J1-1",  "type": "PIN", "wireTypeId": "w_red",    "description": "Alimentazione +24V",     "note": "Fusibile 2A" },
+          { "id": "p2",  "name": "J1-2",  "type": "PIN", "wireTypeId": "w_black",  "description": "GND 0V",                 "note": "" },
+          { "id": "p3",  "name": "J1-3",  "type": "PIN", "wireTypeId": "w_grey",   "description": "Ingresso digitale DI0",  "note": "PNP 24V" },
+          { "id": "p4",  "name": "J1-4",  "type": "PIN", "wireTypeId": "w_grey",   "description": "Ingresso digitale DI1",  "note": "PNP 24V" },
+          { "id": "p5",  "name": "J1-5",  "type": "PIN", "wireTypeId": "w_grey",   "description": "Uscita digitale DO0",    "note": "NPN 500mA" },
+          { "id": "p6",  "name": "J1-6",  "type": "PIN", "wireTypeId": "w_orange", "description": "CAN H",                  "note": "120Ω terminazione" },
+          { "id": "p7",  "name": "J1-7",  "type": "PIN", "wireTypeId": "w_white",  "description": "CAN L",                  "note": "120Ω terminazione" },
+          { "id": "p8",  "name": "J1-8",  "type": "PIN", "wireTypeId": "w_green",  "description": "Shield/PE",              "note": "" }
+        ]
+      },
+      {
+        "id": "cl_J2", "name": "Connettore J2", "icon": "🔌", "description": "Connettore sensori analogici",
+        "pins": [
+          { "id": "p9",  "name": "J2-1",  "type": "PIN", "wireTypeId": "w_red",    "description": "+24V sensore",           "note": "" },
+          { "id": "p10", "name": "J2-2",  "type": "PIN", "wireTypeId": "w_black",  "description": "GND sensore",            "note": "" },
+          { "id": "p11", "name": "J2-3",  "type": "PIN", "wireTypeId": "w_grey",   "description": "Uscita 4-20mA",          "note": "Pressione" },
+          { "id": "p12", "name": "J2-4",  "type": "PIN", "wireTypeId": "w_grey",   "description": "Uscita 4-20mA",          "note": "Temperatura" }
+        ]
+      },
+      {
+        "id": "cl_X1", "name": "Morsettiera X1", "icon": "⚡", "description": "Morsettiera alimentazione 230VAC",
+        "pins": [
+          { "id": "p13", "name": "X1-L",  "type": "TERMINAL", "wireTypeId": "w_yellow", "description": "Fase L",             "note": "230V AC" },
+          { "id": "p14", "name": "X1-N",  "type": "TERMINAL", "wireTypeId": "w_blue",   "description": "Neutro N",           "note": "230V AC" },
+          { "id": "p15", "name": "X1-PE", "type": "TERMINAL", "wireTypeId": "w_green",  "description": "Terra PE",           "note": "" }
+        ]
+      }
+    ],
+    "right": [
+      {
+        "id": "cl_DAQ", "name": "DAQ NI-9205", "icon": "📊", "description": "Modulo acquisizione analogica NI",
+        "pins": [
+          { "id": "r1",  "name": "AI0+",  "type": "DAQ", "wireTypeId": "w_grey",   "description": "Ingresso analogico 0+",  "note": "±10V" },
+          { "id": "r2",  "name": "AI0-",  "type": "DAQ", "wireTypeId": "w_grey",   "description": "Ingresso analogico 0-",  "note": "" },
+          { "id": "r3",  "name": "AI1+",  "type": "DAQ", "wireTypeId": "w_grey",   "description": "Ingresso analogico 1+",  "note": "4-20mA" },
+          { "id": "r4",  "name": "AI1-",  "type": "DAQ", "wireTypeId": "w_grey",   "description": "Ingresso analogico 1-",  "note": "" },
+          { "id": "r5",  "name": "AIGND", "type": "DAQ", "wireTypeId": "w_black",  "description": "Ground analogico",       "note": "" }
+        ]
+      },
+      {
+        "id": "cl_DIO", "name": "DAQ NI-9401", "icon": "📊", "description": "Modulo I/O digitale NI",
+        "pins": [
+          { "id": "r6",  "name": "DI0",   "type": "DAQ", "wireTypeId": "w_grey",   "description": "Ingresso digitale 0",    "note": "TTL 5V" },
+          { "id": "r7",  "name": "DI1",   "type": "DAQ", "wireTypeId": "w_grey",   "description": "Ingresso digitale 1",    "note": "TTL 5V" },
+          { "id": "r8",  "name": "DO0",   "type": "DAQ", "wireTypeId": "w_grey",   "description": "Uscita digitale 0",      "note": "TTL 5V" },
+          { "id": "r9",  "name": "COM",   "type": "DAQ", "wireTypeId": "w_black",  "description": "Common GND",             "note": "" }
+        ]
+      },
+      {
+        "id": "cl_PSU", "name": "Alimentatore PSU1", "icon": "⚡", "description": "Alimentatore 230V→24VDC 5A",
+        "pins": [
+          { "id": "r10", "name": "PSU-L",  "type": "TERMINAL", "wireTypeId": "w_yellow", "description": "Ingresso Fase L",   "note": "230V AC" },
+          { "id": "r11", "name": "PSU-N",  "type": "TERMINAL", "wireTypeId": "w_blue",   "description": "Ingresso Neutro N", "note": "230V AC" },
+          { "id": "r12", "name": "PSU-PE", "type": "TERMINAL", "wireTypeId": "w_green",  "description": "Terra",             "note": "" },
+          { "id": "r13", "name": "PSU+",   "type": "TERMINAL", "wireTypeId": "w_red",    "description": "Uscita +24VDC",     "note": "5A max" },
+          { "id": "r14", "name": "PSU-",   "type": "TERMINAL", "wireTypeId": "w_black",  "description": "Uscita GND",        "note": "" }
+        ]
+      }
+    ]
+  },
+  "connections": [
+    { "id": "c1", "leftId": "p1",  "rightId": "r13", "wireTypeId": "w_red",    "note": "Alimentazione controller" },
+    { "id": "c2", "leftId": "p2",  "rightId": "r14", "wireTypeId": "w_black",  "note": "GND controller" },
+    { "id": "c3", "leftId": "p3",  "rightId": "r6",  "wireTypeId": "w_grey",   "note": "Sensore porta" },
+    { "id": "c4", "leftId": "p4",  "rightId": "r7",  "wireTypeId": "w_grey",   "note": "Fine corsa" },
+    { "id": "c5", "leftId": "p5",  "rightId": "r8",  "wireTypeId": "w_grey",   "note": "Comando attuatore" },
+    { "id": "c6", "leftId": "p11", "rightId": "r3",  "wireTypeId": "w_grey",   "note": "Pressione 4-20mA" },
+    { "id": "c7", "leftId": "p12", "rightId": "r1",  "wireTypeId": "w_grey",   "note": "Temperatura" },
+    { "id": "c8", "leftId": "p13", "rightId": "r10", "wireTypeId": "w_yellow", "note": "Fase alimentatore" },
+    { "id": "c9", "leftId": "p14", "rightId": "r11", "wireTypeId": "w_blue",   "note": "Neutro alimentatore" },
+    { "id":"c10", "leftId": "p15", "rightId": "r12", "wireTypeId": "w_green",  "note": "Terra" }
+  ]
+}
