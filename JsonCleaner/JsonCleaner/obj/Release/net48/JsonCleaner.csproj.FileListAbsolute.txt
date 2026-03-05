@@ -1,0 +1,11 @@
+E:\JsonCleaner\JsonCleaner\bin\Release\net48\JsonCleaner.dll
+E:\JsonCleaner\JsonCleaner\bin\Release\net48\JsonCleaner.pdb
+E:\JsonCleaner\JsonCleaner\bin\Release\net48\Newtonsoft.Json.dll
+E:\JsonCleaner\JsonCleaner\obj\Release\net48\JsonCleaner.csproj.AssemblyReference.cache
+E:\JsonCleaner\JsonCleaner\obj\Release\net48\JsonCleaner.GeneratedMSBuildEditorConfig.editorconfig
+E:\JsonCleaner\JsonCleaner\obj\Release\net48\JsonCleaner.AssemblyInfoInputs.cache
+E:\JsonCleaner\JsonCleaner\obj\Release\net48\JsonCleaner.AssemblyInfo.cs
+E:\JsonCleaner\JsonCleaner\obj\Release\net48\JsonCleaner.csproj.CoreCompileInputs.cache
+E:\JsonCleaner\JsonCleaner\obj\Release\net48\JsonClea.372CF5DB.Up2Date
+E:\JsonCleaner\JsonCleaner\obj\Release\net48\JsonCleaner.dll
+E:\JsonCleaner\JsonCleaner\obj\Release\net48\JsonCleaner.pdb

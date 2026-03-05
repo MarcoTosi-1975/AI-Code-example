@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JsonCleaner DLL - Documentazione</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+            color: white;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-bottom: 3px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header .version {
+            font-size: 0.85em;
+            opacity: 0.9;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .sidebar-nav {
+            padding: 20px 0;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+        }
+
+        .sidebar-nav > ul > li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            color: #e2e8f0;
+            text-decoration: none;
+            padding: 10px 20px;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(255,255,255,0.1);
+            border-left-color: #667eea;
+            padding-left: 25px;
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-left-color: #667eea;
+            font-weight: 600;
+        }
+
+        .sidebar-nav .nav-section {
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #a0aec0;
+            padding: 15px 20px 8px 20px;
+            font-weight: 600;
+        }
+
+        .sidebar-nav .sub-menu {
+            padding-left: 15px;
+        }
+
+        .sidebar-nav .sub-menu a {
+            font-size: 0.9em;
+            padding: 8px 20px;
+        }
+
+        /* TOGGLE BUTTON (mobile) */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* MAIN CONTENT */
+        .main-wrapper {
+            margin-left: 280px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            flex: 1;
+            padding: 40px;
+            max-width: 1200px;
+            background: white;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #667eea;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            font-size: 2em;
+            scroll-margin-top: 20px;
+        }
+
+        h3 {
+            color: #764ba2;
+            margin: 30px 0 15px 0;
+            font-size: 1.5em;
+            scroll-margin-top: 20px;
+        }
+
+        h4 {
+            color: #555;
+            margin: 20px 0 10px 0;
+            font-size: 1.2em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            color: #a0aec0;
+            font-size: 0.8em;
+            text-transform: uppercase;
+        }
+
+        .key { color: #90cdf4; }
+
+        .method-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .method-card h4 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .badge-input { background: #bee3f8; color: #2c5282; }
+        .badge-output { background: #c6f6d5; color: #22543d; }
+        .badge-optional { background: #fed7d7; color: #742a2a; }
+        .badge-new { background: #fef3c7; color: #92400e; }
+
+        .example {
+            background: #fffbeb;
+            border-left: 4px solid #fbbf24;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .example h4 {
+            color: #d97706;
+            margin-top: 0;
+        }
+
+        .warning {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .info {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .success {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .highlight-new {
+            background: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-280px);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+            }
+
+            .content {
+                margin: 10px;
+                padding: 20px;
+            }
+
+            header {
+                padding: 30px 20px;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        @media print {
+            .sidebar, .sidebar-toggle {
+                display: none;
+            }
+            .main-wrapper {
+                margin-left: 0;
+            }
+            .content {
+                margin: 0;
+                box-shadow: none;
+            }
+        }
+
+        /* SCROLL BEHAVIOR */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* CUSTOM SCROLLBAR */
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰ Menu</button>
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1>📦 JsonCleaner</h1>
+            <span class="version">v1.1 | Feb 2026</span>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="nav-section">Introduzione</li>
+                <li><a href="#overview">Panoramica</a></li>
+                <li><a href="#installation">Installazione</a></li>
+                
+                <li class="nav-section">API Reference</li>
+                <li><a href="#methods">Metodi Disponibili</a></li>
+                <li>
+                    <ul class="sub-menu">
+                        <li><a href="#method-1">RemoveJsonElementFromString</a></li>
+                        <li><a href="#method-2">RemovePropertyByName 🆕</a></li>
+                        <li><a href="#method-3">RemoveJsonElement</a></li>
+                        <li><a href="#method-4">IsValidJson</a></li>
+                    </ul>
+                </li>
+                <li><a href="#filter-system">Sistema di Filtri 🆕</a></li>
+                <li><a href="#operators">Operatori</a></li>
+                
+                <li class="nav-section">Esempi Pratici</li>
+                <li><a href="#examples">Tutti gli Esempi</a></li>
+                <li>
+                    <ul class="sub-menu">
+                        <li><a href="#example-1">Oggetti Vuoti</a></li>
+                        <li><a href="#example-2">Per Nome</a></li>
+                        <li><a href="#example-3">Filtro Booleano 🆕</a></li>
+                        <li><a href="#example-4">Filtro Numerico</a></li>
+                        <li><a href="#example-5">Filtro Stringa</a></li>
+                        <li><a href="#example-6">Array Completi</a></li>
+                        <li><a href="#example-7">Filtri Multipli 🆕</a></li>
+                        <li><a href="#example-8">Operatori Avanzati</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-section">Integrazione</li>
+                <li><a href="#teststand">TestStand</a></li>
+                <li>
+                    <ul class="sub-menu">
+                        <li><a href="#ts-config">Configurazione</a></li>
+                        <li><a href="#ts-params">Parametri</a></li>
+                        <li><a href="#ts-variables">Variabili</a></li>
+                        <li><a href="#ts-best">Best Practices</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-section">Supporto</li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+                <li><a href="#api">Riferimento Rapido</a></li>
+                <li><a href="#changelog">Changelog</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-wrapper">
+        <header>
+            <h1>📦 JsonCleaner.dll</h1>
+            <p>Libreria .NET per la rimozione ricorsiva di elementi JSON</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Compatibile con TestStand 2019+ | <span class="highlight-new">🆕 Nuova Sintassi Semplificata!</span></p>
+        </header>
+
+        <div class="content">
+            <!-- OVERVIEW -->
+            <section id="overview">
+                <h2>📋 Panoramica</h2>
+                <p><strong>JsonCleaner</strong> è una libreria .NET che permette di rimuovere elementi da file JSON in modo ricorsivo, indipendentemente dal livello di annidamento.</p>
+                
+                <div class="success">
+                    <strong>🎉 Novità Versione 1.1:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>Sintassi filtri semplificata</strong> - Zero escape, zero virgolette complicate!</li>
+                        <li>Scrivi semplicemente: <code>"Occurred Equals true"</code></li>
+                        <li>Niente più: <code>"[{\"Property\": \"Occurred\", ...}]"</code></li>
+                    </ul>
+                </div>
+
+                <h3>Caratteristiche Principali</h3>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>✅ Rimozione ricorsiva di oggetti, array e proprietà</li>
+                    <li>✅ <strong>Sistema di filtri condizionali con sintassi semplificata 🆕</strong></li>
+                    <li>✅ Logging dettagliato opzionale</li>
+                    <li>✅ Gestione memoria ottimizzata con IDisposable</li>
+                    <li>✅ Protezione stack overflow (max 100 livelli)</li>
+                    <li>✅ Compatibile con TestStand .NET Adapter</li>
+                    <li>✅ Thread-safe e performante</li>
+                </ul>
+
+                <h3>Requisiti</h3>
+                <table>
+                    <tr>
+                        <th>Componente</th>
+                        <th>Versione Minima</th>
+                    </tr>
+                    <tr>
+                        <td>.NET Framework / .NET</td>
+                        <td>4.8 o .NET 6.0+</td>
+                    </tr>
+                    <tr>
+                        <td>Newtonsoft.Json</td>
+                        <td>13.0.3 o superiore</td>
+                    </tr>
+                    <tr>
+                        <td>TestStand (opzionale)</td>
+                        <td>2019 o superiore</td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- INSTALLATION -->
+            <section id="installation">
+                <h2>💾 Installazione</h2>
+                
+                <h3>File Necessari</h3>
+                <div class="info">
+                    <strong>📁 File da copiare sul sistema target:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><code>JsonCleaner.dll</code> - Libreria principale</li>
+                        <li><code>Newtonsoft.Json.dll</code> - Dipendenza JSON parser</li>
+                    </ul>
+                </div>
+
+                <h3>Posizione Raccomandata</h3>
+                <div class="code-block" data-lang="path">
+C:\TestStand\Components\JsonCleaner\
+├── JsonCleaner.dll
+├── Newtonsoft.Json.dll
+└── JsonCleaner_Documentation.html</div>
+
+                <h3>Verifica Installazione</h3>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li>Copiare i file nella cartella scelta</li>
+                    <li>Aprire TestStand Sequence Editor</li>
+                    <li>Creare un nuovo step con .NET Adapter</li>
+                    <li>Selezionare <code>JsonCleaner.dll</code> come Assembly</li>
+                    <li>Verificare che appaia la classe <code>JsonCleaner.JsonCleanerTool</code></li>
+                </ol>
+            </section>
+
+            <!-- METHODS -->
+            <section id="methods">
+                <h2>🔧 Metodi Disponibili</h2>
+
+                <!-- Method 1 -->
+                <div class="method-card" id="method-1">
+                    <h4>1. RemoveJsonElementFromString</h4>
+                    <p><strong>Scopo:</strong> Rimuove elementi JSON in base al <u>contenuto/valore</u></p>
+                    
+                    <h4 style="margin-top: 20px;">Parametri:</h4>
+                    <table>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Direzione</th>
+                            <th>Descrizione</th>
+                        </tr>
+                        <tr>
+                            <td>inputJson</td>
+                            <td>String</td>
+                            <td><span class="badge badge-input">Input</span></td>
+                            <td>Stringa JSON completa da processare</td>
+                        </tr>
+                        <tr>
+                            <td>targetToRemove</td>
+                            <td>String</td>
+                            <td><span class="badge badge-input">Input</span></td>
+                            <td>Elemento JSON da rimuovere (oggetto, array, valore)</td>
+                        </tr>
+                        <tr>
+                            <td>outputJson</td>
+                            <td>String</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>JSON ripulito (risultato)</td>
+                        </tr>
+                        <tr>
+                            <td>removedCount</td>
+                            <td>Int32</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>Numero di elementi rimossi</td>
+                        </tr>
+                        <tr>
+                            <td>logOutput</td>
+                            <td>String</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>Log dettagliato operazioni</td>
+                        </tr>
+                        <tr>
+                            <td>enableLogging</td>
+                            <td>Boolean</td>
+                            <td><span class="badge badge-input">Input</span> <span class="badge badge-optional">Optional</span></td>
+                            <td>Abilita logging (default: false)</td>
+                        </tr>
+                        <tr>
+                            <td>Return Value</td>
+                            <td>Boolean</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>True se operazione riuscita</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Method 2 -->
+                <div class="method-card" id="method-2">
+                    <h4>2. RemovePropertyByName <span class="badge badge-new">🆕 Aggiornato v1.1</span></h4>
+                    <p><strong>Scopo:</strong> Rimuove proprietà JSON in base al <u>nome</u>, con supporto filtri condizionali</p>
+                    
+                    <h4 style="margin-top: 20px;">Parametri:</h4>
+                    <table>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Direzione</th>
+                            <th>Descrizione</th>
+                        </tr>
+                        <tr>
+                            <td>inputJson</td>
+                            <td>String</td>
+                            <td><span class="badge badge-input">Input</span></td>
+                            <td>Stringa JSON completa</td>
+                        </tr>
+                        <tr>
+                            <td>propertyName</td>
+                            <td>String</td>
+                            <td><span class="badge badge-input">Input</span></td>
+                            <td>Nome della proprietà da rimuovere (es. "Error", "Common")</td>
+                        </tr>
+                        <tr>
+                            <td>outputJson</td>
+                            <td>String</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>JSON ripulito</td>
+                        </tr>
+                        <tr>
+                            <td>removedCount</td>
+                            <td>Int32</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>Numero di proprietà rimosse</td>
+                        </tr>
+                        <tr>
+                            <td>skippedCount</td>
+                            <td>Int32</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>Numero di proprietà skippate (filtri)</td>
+                        </tr>
+                        <tr>
+                            <td>logOutput</td>
+                            <td>String</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>Log dettagliato</td>
+                        </tr>
+                        <tr>
+                            <td>filtersJson</td>
+                            <td>String</td>
+                            <td><span class="badge badge-input">Input</span> <span class="badge badge-optional">Optional</span></td>
+                            <td>JSON array di filtri (vecchio formato)</td>
+                        </tr>
+                        <tr style="background: #fef3c7;">
+                            <td><strong>filtersString</strong> <span class="badge badge-new">🆕 Nuovo</span></td>
+                            <td>String</td>
+                            <td><span class="badge badge-input">Input</span> <span class="badge badge-optional">Optional</span></td>
+                            <td><strong>Filtri sintassi semplificata</strong> (es. "Occurred Equals true")</td>
+                        </tr>
+                        <tr>
+                            <td>enableLogging</td>
+                            <td>Boolean</td>
+                            <td><span class="badge badge-input">Input</span> <span class="badge badge-optional">Optional</span></td>
+                            <td>Abilita logging</td>
+                        </tr>
+                        <tr>
+                            <td>Return Value</td>
+                            <td>Boolean</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                            <td>True se successo</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Method 3 -->
+                <div class="method-card" id="method-3">
+                    <h4>3. RemoveJsonElement</h4>
+                    <p><strong>Scopo:</strong> Come RemoveJsonElementFromString ma opera su file fisici</p>
+                    <p style="margin-top: 10px; color: #666;">Parametri identici al metodo 1, ma usa <code>inputFilePath</code> e <code>outputFilePath</code> invece di stringhe JSON.</p>
+                </div>
+
+                <!-- Method 4 -->
+                <div class="method-card" id="method-4">
+                    <h4>4. IsValidJson</h4>
+                    <p><strong>Scopo:</strong> Verifica la validità di una stringa JSON</p>
+                    
+                    <table style="margin-top: 15px;">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Direzione</th>
+                        </tr>
+                        <tr>
+                            <td>json</td>
+                            <td>String</td>
+                            <td><span class="badge badge-input">Input</span></td>
+                        </tr>
+                        <tr>
+                            <td>errorMessage</td>
+                            <td>String</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                        </tr>
+                        <tr>
+                            <td>Return Value</td>
+                            <td>Boolean</td>
+                            <td><span class="badge badge-output">Output</span></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3 id="filter-system">Sistema di Filtri</h3>
+                
+                <div class="success">
+                    <strong>🎉 NUOVO: Sintassi Semplificata v1.1!</strong>
+                    <p style="margin-top: 10px;">Ora puoi usare una sintassi super semplice senza escape di virgolette!</p>
+                </div>
+
+                <h4>Formato Semplificato (RACCOMANDATO) ✅ <span class="badge badge-new">🆕 Nuovo</span></h4>
+                <p>Usa il parametro <code>filtersString</code> con questa sintassi:</p>
+
+                <div class="code-block" data-lang="syntax">
+<span class="key">PropertyName Operator Value</span>
+
+<span class="key">// Filtro singolo</span>
+"Occurred Equals true"
+
+<span class="key">// Filtri multipli (separati da punto e virgola)</span>
+"Occurred Equals true; Code GreaterThan 0"
+
+<span class="key">// Con stringhe (usa apici se contiene spazi)</span>
+"Msg NotEquals ''"
+"Status Contains 'Error'"
+"Name StartsWith Test"</div>
+
+                <h4>Valori Supportati</h4>
+                <table>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Esempi</th>
+                        <th>Note</th>
+                    </tr>
+                    <tr>
+                        <td>Boolean</td>
+                        <td><code>true</code>, <code>false</code></td>
+                        <td>Case insensitive</td>
+                    </tr>
+                    <tr>
+                        <td>Numeri</td>
+                        <td><code>0</code>, <code>10</code>, <code>3.14</code>, <code>-5</code></td>
+                        <td>Int o double</td>
+                    </tr>
+                    <tr>
+                        <td>Stringhe</td>
+                        <td><code>Test</code>, <code>'Hello World'</code>, <code>"Error"</code></td>
+                        <td>Apici opzionali (necessari se contiene spazi)</td>
+                    </tr>
+                    <tr>
+                        <td>Null</td>
+                        <td><code>null</code></td>
+                        <td>Case insensitive</td>
+                    </tr>
+                </table>
+
+                <h4 id="operators">Operatori Disponibili</h4>
+                <table>
+                    <tr>
+                        <th>Operatore</th>
+                        <th>Tipo Dati</th>
+                        <th>Descrizione</th>
+                        <th>Esempio</th>
+                    </tr>
+                    <tr>
+                        <td><code>Equals</code></td>
+                        <td>Tutti</td>
+                        <td>Uguale a</td>
+                        <td><code>Status Equals Active</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>NotEquals</code></td>
+                        <td>Tutti</td>
+                        <td>Diverso da</td>
+                        <td><code>Code NotEquals 0</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>GreaterThan</code></td>
+                        <td>Numeri</td>
+                        <td>Maggiore di</td>
+                        <td><code>Count GreaterThan 0</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>LessThan</code></td>
+                        <td>Numeri</td>
+                        <td>Minore di</td>
+                        <td><code>Value LessThan 100</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>GreaterThanOrEqual</code></td>
+                        <td>Numeri</td>
+                        <td>Maggiore o uguale</td>
+                        <td><code>Score GreaterThanOrEqual 50</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>LessThanOrEqual</code></td>
+                        <td>Numeri</td>
+                        <td>Minore o uguale</td>
+                        <td><code>Temp LessThanOrEqual 80</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>Contains</code></td>
+                        <td>Stringhe</td>
+                        <td>Contiene</td>
+                        <td><code>Message Contains Error</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>StartsWith</code></td>
+                        <td>Stringhe</td>
+                        <td>Inizia con</td>
+                        <td><code>Name StartsWith Test</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>EndsWith</code></td>
+                        <td>Stringhe</td>
+                        <td>Termina con</td>
+                        <td><code>File EndsWith .txt</code></td>
+                    </tr>
+                </table>
+
+                <div class="warning" style="margin-top: 15px;">
+                    <strong>⚠️ Formato JSON Vecchio (Ancora Supportato):</strong><br>
+                    Il parametro <code>filtersJson</code> funziona ancora per retrocompatibilità, ma in TestStand richiede escape:<br>
+                    <code>"[{\"Property\": \"Occurred\", \"Operator\": \"Equals\", \"Value\": true}]"</code><br>
+                    <strong>→ Usa filtersString invece!</strong>
+                </div>
+
+                <div class="success" style="margin-top: 20px;">
+                    <strong>🎯 Confronto Sintassi</strong>
+                    <table style="margin-top: 10px;">
+                        <tr>
+                            <th>Prima (filtersJson)</th>
+                            <th>Adesso (filtersString) 🆕</th>
+                        </tr>
+                        <tr>
+                            <td><code>"[{\"Property\": \"Occurred\", \"Operator\": \"Equals\", \"Value\": true}]"</code></td>
+                            <td><code>"Occurred Equals true"</code></td>
+                        </tr>
+                        <tr>
+                            <td style="color: #dc2626;">❌ Complicato, errori facili</td>
+                            <td style="color: #16a34a;">✅ Semplice, leggibile</td>
+                        </tr>
+                    </table>
+                </div>
+            </section>
+
+            <!-- EXAMPLES -->
+            <section id="examples">
+                <h2>💡 Esempi Pratici</h2>
+
+                <!-- Example 1 -->
+                <div class="example" id="example-1">
+                    <h4>Esempio 1: Rimuovere Oggetti Vuoti</h4>
+                    <p><strong>Caso d'uso:</strong> Pulizia di oggetti "Error" vuoti dopo test superati</p>
+                    
+                    <h4 style="margin-top: 15px;">Input JSON:</h4>
+                    <div class="code-block" data-lang="json">
+{
+  "Test1": {
+    "Error": {},
+    "Result": "PASS"
+  },
+  "Test2": {
+    "Error": {},
+    "Result": "PASS"
+  }
+}</div>
+
+                    <h4>Metodo: RemoveJsonElementFromString</h4>
+                    <table>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Valore</th>
+                        </tr>
+                        <tr>
+                            <td>targetToRemove</td>
+                            <td><code>{}</code></td>
+                        </tr>
+                    </table>
+
+                    <h4 style="margin-top: 15px;">Output:</h4>
+                    <div class="code-block" data-lang="json">
+{
+  "Test1": {
+    "Result": "PASS"
+  },
+  "Test2": {
+    "Result": "PASS"
+  }
+}
+
+<span class="key">// removedCount = 2</span></div>
+                </div>
+
+                <!-- Example 2 -->
+                <div class="example" id="example-2">
+                    <h4>Esempio 2: Rimuovere Proprietà per Nome (Senza Filtri)</h4>
+                    <p><strong>Caso d'uso:</strong> Eliminare tutte le proprietà "Common" dal JSON</p>
+                    
+                    <h4 style="margin-top: 15px;">Input JSON:</h4>
+                    <div class="code-block" data-lang="json">
+{
+  "Common": {"ver": "1.0"},
+  "Data": {
+    "Common": {"ver": "1.0"},
+    "Values": [1, 2, 3]
+  }
+}</div>
+
+                    <h4>Metodo: RemovePropertyByName</h4>
+                    <table>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Valore</th>
+                        </tr>
+                        <tr>
+                            <td>propertyName</td>
+                            <td><code>"Common"</code></td>
+                        </tr>
+                        <tr>
+                            <td>filtersString</td>
+                            <td><code>""</code> (vuoto - rimuovi tutto)</td>
+                        </tr>
+                    </table>
+
+                    <h4 style="margin-top: 15px;">Output:</h4>
+                    <div class="code-block" data-lang="json">
+{
+  "Data": {
+    "Values": [1, 2, 3]
+  }
+}
+
+<span class="key">// removedCount = 2, skippedCount = 0</span></div>
+                </div>
+
+                <!-- Example 3 -->
+                <div class="example" id="example-3">
+                    <h4>Esempio 3: Rimuovere con Filtro Booleano <span class="badge badge-new">🆕 Nuova Sintassi</span></h4>
+                    <p><strong>Caso d'uso:</strong> Rimuovere "Error" SOLO se Occurred = false</p>
+                    
+                    <h4 style="margin-top: 15px;">Input JSON:</h4>
+                    <div class="code-block" data-lang="json">
+{
+  "Test1": {
+    "Error": {
+      "Code": 0,
+      "Msg": "",
+      "Occurred": false
+    }
+  },
+  "Test2": {
+    "Error": {
+      "Code": 5,
+      "Msg": "Timeout",
+      "Occurred": true
+    }
+  }
+}</div>
+
+                    <h4>Metodo: RemovePropertyByName</h4>
+                    <table>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Valore</th>
+                        </tr>
+                        <tr>
+                            <td>propertyName</td>
+                            <td><code>"Error"</code></td>
+                        </tr>
+                        <tr style="background: #fef3c7;">
+                            <td><strong>filtersString</strong> <span class="badge badge-new">🆕</span></td>
+                            <td><code>"Occurred Equals true"</code></td>
+                        </tr>
+                    </table>
+
+                    <div class="success" style="margin-top: 15px;">
+                        <strong>✅ Zero escape! Zero virgolette complicate!</strong><br>
+                        In TestStand scrivi semplicemente: <code>Locals.FiltersString = "Occurred Equals true"</code>
+                    </div>
+
+                    <div class="info" style="margin-top: 15px;">
+                        <strong>ℹ️ Logica Filtro:</strong> Se il filtro matcha, la proprietà viene <strong>SKIPPATA</strong> (non rimossa).<br>
+                        In questo caso: rimuovi "Error" dove Occurred ≠ true
+                    </div>
+
+                    <h4 style="margin-top: 15px;">Output:</h4>
+                    <div class="code-block" data-lang="json">
+{
+  "Test1": {},
+  "Test2": {
+    "Error": {
+      "Code": 5,
+      "Msg": "Timeout",
+      "Occurred": true
+    }
+  }
+}
+
+<span class="key">// removedCount = 1, skippedCount = 1</span></div>
+                </div>
+
+                <!-- Example 4 -->
+                <div class="example" id="example-4">
+                    <h4>Esempio 4: Filtro Numerico <span class="badge badge-new">🆕</span></h4>
+                    <p><strong>Caso d'uso:</strong> Rimuovere "Results" solo se Count = 0</p>
+                    
+                    <h4 style="margin-top: 15px;">Parametri:</h4>
+                    <table>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Valore</th>
+                        </tr>
+                        <tr>
+                            <td>propertyName</td>
+                            <td><code>"Results"</code></td>
+                        </tr>
+                        <tr style="background: #fef3c7;">
+                            <td><strong>filtersString</strong></td>
+                            <td><code>"Count GreaterThan 0"</code></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Example 5 -->
+                <div class="example" id="example-5">
+                    <h4>Esempio 5: Filtro Stringa <span class="badge badge-new">🆕</span></h4>
+                    <p><strong>Caso d'uso:</strong> Rimuovere "Status" solo se Msg è vuota</p>
+                    
+                    <h4 style="margin-top: 15px;">Parametri:</h4>
+                    <table>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Valore</th>
+                        </tr>
+                        <tr>
+                            <td>propertyName</td>
+                            <td><code>"Status"</code></td>
+                        </tr>
+                        <tr style="background: #fef3c7;">
+                            <td><strong>filtersString</strong></td>
+                            <td><code>"Msg NotEquals ''"</code></td>
+                        </tr>
+                    </table>
+
+                    <p style="margin-top: 10px;"><strong>Nota:</strong> Gli apici <code>''</code> sono necessari per stringhe vuote.</p>
+                </div>
+
+                <!-- Example 6 -->
+                <div class="example" id="example-6">
+                    <h4>Esempio 6: Rimuovere Array Completi</h4>
+                    <p><strong>Caso d'uso:</strong> Rimuovere array specifici in base al contenuto</p>
+                    
+                    <h4 style="margin-top: 15px;">Metodo: RemoveJsonElementFromString</h4>
+                    <table>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Valore</th>
+                        </tr>
+                        <tr>
+                            <td>targetToRemove</td>
+                            <td><code>[1, 2, 3]</code></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Example 7 -->
+                <div class="example" id="example-7">
+                    <h4>Esempio 7: Filtri Multipli <span class="badge badge-new">🆕 Nuovo</span></h4>
+                    <p><strong>Caso d'uso:</strong> Rimuovere "Data" con logica complessa (Count = 0 OPPURE Status = "Empty")</p>
+                    
+                    <h4 style="margin-top: 15px;">Parametri:</h4>
+                    <table>
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Valore</th>
+                        </tr>
+                        <tr>
+                            <td>propertyName</td>
+                            <td><code>"Data"</code></td>
+                        </tr>
+                        <tr style="background: #fef3c7;">
+                            <td><strong>filtersString</strong></td>
+                            <td><code>"Count Equals 0; Status Equals Empty"</code></td>
+                        </tr>
+                    </table>
+
+                    <div class="info" style="margin-top: 15px;">
+                        <strong>ℹ️ Logica OR:</strong> Viene skippato se <strong>almeno uno</strong> dei filtri matcha.
+                    </div>
+                </div>
+
+                <!-- Example 8 -->
+                <div class="example" id="example-8">
+                    <h4>Esempio 8: Operatori Stringhe Avanzati <span class="badge badge-new">🆕</span></h4>
+                    <p><strong>Caso d'uso:</strong> Rimuovere "Log" solo se non contiene "Error"</p>
+                    
+                    <h4 style="margin-top: 15px;">Esempi operatori:</h4>
+                    <div class="code-block" data-lang="syntax">
+<span class="key">// Inizia con</span>
+"Name StartsWith Test"
+
+<span class="key">// Termina con</span>
+"FileName EndsWith .log"
+
+<span class="key">// Contiene</span>
+"Path Contains Windows"
+
+<span class="key">// Con spazi (usa apici)</span>
+"Message Contains 'Fatal Error'"</div>
+                </div>
+            </section>
+
+            <!-- TESTSTAND -->
+            <section id="teststand">
+                <h2>🔌 Integrazione con TestStand</h2>
+
+                <h3 id="ts-config">Step 1: Configurazione Base</h3>
+                <ol style="margin-left: 20px;">
+                    <li>Apri <strong>TestStand Sequence Editor</strong></li>
+                    <li>Inserisci un nuovo step</li>
+                    <li>Adapter Type: <strong>.NET Adapter</strong></li>
+                    <li>Tab <strong>.NET</strong> → Use Assembly</li>
+                    <li>Assembly Path: <code>C:\TestStand\Components\JsonCleaner\JsonCleaner.dll</code></li>
+                    <li>Class Name: <code>JsonCleaner.JsonCleanerTool</code></li>
+                    <li>Method: Seleziona il metodo desiderato</li>
+                </ol>
+
+                <h3 id="ts-params">Step 2: Configurazione Parametri</h3>
+                <p>Nel tab <strong>Parameters</strong>, mappa i parametri del metodo alle variabili TestStand:</p>
+
+                <h4>Esempio: RemovePropertyByName (CON NUOVA SINTASSI) <span class="badge badge-new">🆕</span></h4>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Direction</th>
+                        <th>TestStand Variable</th>
+                    </tr>
+                    <tr>
+                        <td>inputJson</td>
+                        <td>Input</td>
+                        <td><code>Locals.MyJsonString</code></td>
+                    </tr>
+                    <tr>
+                        <td>propertyName</td>
+                        <td>Input</td>
+                        <td><code>"Error"</code></td>
+                    </tr>
+                    <tr>
+                        <td>outputJson</td>
+                        <td>Output</td>
+                        <td><code>Locals.CleanedJson</code></td>
+                    </tr>
+                    <tr>
+                        <td>removedCount</td>
+                        <td>Output</td>
+                        <td><code>Locals.RemovedCount</code></td>
+                    </tr>
+                    <tr>
+                        <td>skippedCount</td>
+                        <td>Output</td>
+                        <td><code>Locals.SkippedCount</code></td>
+                    </tr>
+                    <tr>
+                        <td>logOutput</td>
+                        <td>Output</td>
+                        <td><code>Locals.LogOutput</code></td>
+                    </tr>
+                    <tr>
+                        <td>filtersJson</td>
+                        <td>Input</td>
+                        <td><code>""</code> (lascia vuoto)</td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td><strong>filtersString</strong> <span class="badge badge-new">🆕</span></td>
+                        <td>Input</td>
+                        <td><code>Locals.FiltersString</code></td>
+                    </tr>
+                    <tr>
+                        <td>enableLogging</td>
+                        <td>Input</td>
+                        <td><code>True</code></td>
+                    </tr>
+                    <tr>
+                        <td>Return Value</td>
+                        <td>Output</td>
+                        <td><code>Locals.Success</code></td>
+                    </tr>
+                </table>
+
+                <h3 id="ts-variables">Step 3: Preparazione Variabili</h3>
+                <div class="code-block" data-lang="teststand">
+<span class="key">// Statement Step - Prepara JSON input</span>
+Locals.MyJsonString = FileGlobals.TestResults.AsPropertyObject().AsJSON(True)
+
+<span class="key">// Statement Step - NUOVA SINTASSI SEMPLIFICATA! 🆕</span>
+Locals.FiltersString = "Occurred Equals true"
+
+<span class="key">// Oppure con filtri multipli</span>
+Locals.FiltersString = "Occurred Equals true; Code GreaterThan 0"
+
+<span class="key">// .NET Step - Chiama JsonCleaner</span>
+
+<span class="key">// Statement Step - Verifica risultato</span>
+If (Locals.Success == True)
+  Locals.CleanedObject = JSON.Parse(Locals.CleanedJson)
+  Log("Rimosse: " + Locals.RemovedCount)
+  Log("Skippate: " + Locals.SkippedCount)
+EndIf</div>
+
+                <h3 id="ts-best">Best Practices TestStand</h3>
+                <div class="success">
+                    <strong>✅ Raccomandazioni:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Usa <strong>Create New Instance</strong> (default) - non serve Dispose</li>
+                        <li>Abilita logging solo in fase di debug</li>
+                        <li>Verifica sempre <code>Return Value</code> prima di usare <code>outputJson</code></li>
+                        <li>Controlla <code>logOutput</code> in caso di errori</li>
+                        <li>Per JSON grandi (&gt;10MB), considera di processarli a blocchi</li>
+                        <li><strong>🆕 Usa sempre filtersString invece di filtersJson</strong></li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- TROUBLESHOOTING -->
+            <section id="troubleshooting">
+                <h2>🔍 Troubleshooting</h2>
+
+                <h3>Problema: TestStand non trova la DLL</h3>
+                <div class="warning">
+                    <strong>Errore:</strong> "Assembly not found" o "Type not found"
+                    <br><br>
+                    <strong>Soluzioni:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Verifica che <code>JsonCleaner.dll</code> e <code>Newtonsoft.Json.dll</code> siano nella stessa cartella</li>
+                        <li>Controlla la versione .NET (Framework 4.8 vs .NET 6+)</li>
+                        <li>Se usi .NET 6+, verifica che TestStand sia 2021 o superiore</li>
+                        <li>Prova a mettere il path assoluto</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: Filtri non funzionano <span class="badge badge-new">🆕</span></h3>
+                <div class="warning">
+                    <strong>Verifica:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>La sintassi <code>filtersString</code> è corretta? Format: <code>"PropertyName Operator Value"</code></li>
+                        <li>Il nome della proprietà è corretto (case-sensitive)?</li>
+                        <li>Gli operatori sono scritti corretti? Es: <code>Equals</code> non <code>Equal</code></li>
+                        <li>Se il valore è una stringa con spazi, hai usato gli apici?</li>
+                        <li>Per filtri multipli, hai separato con <code>;</code>?</li>
+                        <li>Abilita logging e controlla <code>logOutput</code></li>
+                    </ul>
+                </div>
+
+                <h3>Debug: Lettura Log</h3>
+                <div class="code-block" data-lang="log">
+[09:15:23.456] [START] RemovePropertyByName
+[09:15:23.457] Property name: 'Error'
+[09:15:23.458] Parsing filtersString: 'Occurred Equals true'
+[09:15:23.459] Filtro parsato: Occurred Equals true (tipo: Boolean)
+[09:15:23.460] JSON parsato correttamente
+[09:15:23.462] Trovata proprietà: 'Error'
+[09:15:23.463]   Filtro: Occurred Equals true → True
+[09:15:23.464]   → SKIP (filtri matchano)
+[09:15:23.468] Rimosse: 1, Skippate: 1
+[09:15:23.471] [SUCCESS]</div>
+            </section>
+
+            <!-- API REFERENCE -->
+            <section id="api">
+                <h2>📚 Riferimento Rapido API</h2>
+                
+                <table>
+                    <tr>
+                        <th>Metodo</th>
+                        <th>Usa quando...</th>
+                        <th>Parametri Chiave</th>
+                    </tr>
+                    <tr>
+                        <td><code>RemoveJsonElementFromString</code></td>
+                        <td>Vuoi rimuovere in base al <strong>contenuto</strong></td>
+                        <td>targetToRemove (JSON)</td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td><code>RemovePropertyByName</code> <span class="badge badge-new">🆕</span></td>
+                        <td>Vuoi rimuovere in base al <strong>nome</strong></td>
+                        <td>propertyName, <strong>filtersString</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>RemoveJsonElement</code></td>
+                        <td>Lavori con <strong>file</strong> su disco</td>
+                        <td>inputFilePath, outputFilePath</td>
+                    </tr>
+                    <tr>
+                        <td><code>IsValidJson</code></td>
+                        <td>Vuoi validare una stringa JSON</td>
+                        <td>json</td>
+                    </tr>
+                </table>
+
+                <h3>Limiti e Specifiche</h3>
+                <table>
+                    <tr>
+                        <th>Parametro</th>
+                        <th>Valore</th>
+                    </tr>
+                    <tr>
+                        <td>Max Recursion Depth</td>
+                        <td>100 livelli</td>
+                    </tr>
+                    <tr>
+                        <td>Max Log Size</td>
+                        <td>1 MB</td>
+                    </tr>
+                    <tr>
+                        <td>Thread Safety</td>
+                        <td>✅ Sì</td>
+                    </tr>
+                    <tr>
+                        <td>Memory Management</td>
+                        <td>✅ IDisposable</td>
+                    </tr>
+                    <tr>
+                        <td>JSON Size Raccomandato</td>
+                        <td>&lt; 10 MB</td>
+                    </tr>
+                </table>
+
+                <h3 id="changelog">Changelog</h3>
+                <table>
+                    <tr>
+                        <th>Versione</th>
+                        <th>Data</th>
+                        <th>Modifiche</th>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td><strong>1.1</strong></td>
+                        <td>Feb 2026</td>
+                        <td>
+                            <strong>🆕 Aggiunto filtersString</strong><br>
+                            • Sintassi semplificata<br>
+                            • Zero escape virgolette<br>
+                            • Filtri multipli con ;<br>
+                            • Parsing automatico tipi<br>
+                            • Retrocompatibilità totale
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>1.0</td>
+                        <td>Feb 2026</td>
+                        <td>Versione iniziale</td>
+                    </tr>
+                </table>
+            </section>
+
+        </div>
+
+        <footer>
+            <p><strong>JsonCleaner.dll v1.1</strong></p>
+            <p style="margin-top: 10px;">Libreria .NET per TestStand | Documentazione Tecnica</p>
+            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">
+                © 2026 | Compatibile con .NET Framework 4.8+ e .NET 6.0+
+            </p>
+            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+                🆕 <strong>Novità v1.1:</strong> Sintassi filtri semplificata - Zero escape!
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Toggle sidebar on mobile
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        // Active link highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            const links = document.querySelectorAll('.sidebar-nav a');
+            const sections = document.querySelectorAll('section[id], div[id]');
+
+            function highlightActiveLink() {
+                let current = '';
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (pageYOffset >= (sectionTop - 100)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                links.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', highlightActiveLink);
+            highlightActiveLink();
+
+            // Close sidebar on link click (mobile)
+            links.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 1024) {
+                        document.getElementById('sidebar').classList.remove('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
