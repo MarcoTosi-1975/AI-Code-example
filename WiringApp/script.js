@@ -46,6 +46,8 @@ const State = {
   clusters:{left:[],right:[]},
   active:{left:null,right:null},
   connections:[],
+  devices:[],          // device library
+  canvasDevices:[],    // [{id, devId, side:'canvas', x, y}] placed on canvas
   _uid:1,
   uid(p='x'){return p+(this._uid++);}
 };
@@ -57,19 +59,36 @@ const ProjectMgr = {
     State.wireTypes   = data.wireTypes||[];
     State.clusters.left  = data.clusters?.left||[];
     State.clusters.right = data.clusters?.right||[];
-    State.connections = data.connections||[];
+    State.connections = (data.connections||[]).map(c=>{
+      // resolve names from pins (handles JSON files that don't carry them)
+      let lp=null,rp=null;
+      for(const cl of State.clusters.left)  { const p=cl.pins.find(p=>p.id===c.leftId);  if(p){lp=p;break;} }
+      for(const cl of State.clusters.right) { const p=cl.pins.find(p=>p.id===c.rightId); if(p){rp=p;break;} }
+      return { note:'', length:'', label:'', ...c,
+        leftName:  lp?.name  || c.leftName  || c.leftId,
+        rightName: rp?.name  || c.rightName || c.rightId,
+        leftType:  lp?.type  || c.leftType  || '',
+        rightType: rp?.type  || c.rightType || '',
+        wireTypeId: c.wireTypeId || lp?.wireTypeId || rp?.wireTypeId || null
+      };
+    });
+    // also load devices if present
+    State.devices = data.devices||[];
+    State.canvasDevices = data.canvasDevices||[];
     State.active.left  = State.clusters.left[0]?.id||null;
     State.active.right = State.clusters.right[0]?.id||null;
     ClusterMgr.renderSelectors();
     ClusterMgr.renderList('left');
     ClusterMgr.renderList('right');
     WireTypeMgr.render();
-    setTimeout(()=>SVGCanvas.redraw(),100);
+    DeviceMgr.render();
+    setTimeout(()=>{ SVGCanvas.redraw(); CanvasDevices.render(); },100);
     LVBridge.send('event','projectLoaded',{name:State.projectName});
   },
   toJSON(){
-    return {project:State.projectName,version:'4.0',
-      wireTypes:State.wireTypes,clusters:State.clusters,connections:State.connections};
+    return {project:State.projectName,version:'4.7',
+      wireTypes:State.wireTypes,clusters:State.clusters,
+      connections:State.connections,devices:State.devices,canvasDevices:State.canvasDevices};
   }
 };
 
@@ -181,6 +200,7 @@ const WireTypeMgr = {
 // ─── WIRE NOTES PANEL ───────────────────────────────────────
 const WireNotes = (() => {
   let activeConnId = null;
+  const cardOffsets = {};  // connId -> {dx, dy} user drag offset
 
   function select(connId){
     // deselect previous
@@ -197,6 +217,9 @@ const WireNotes = (() => {
     const wtOpts = State.wireTypes.map(w=>`<option value="${w.id}"${w.id===conn.wireTypeId?' selected':''}>${w.name}</option>`).join('');
 
     // update header label
+    // show the notes panel
+    const panel = document.getElementById('wireNotesPanel');
+    if(panel) panel.classList.add('wn-visible');
     const lbl = document.getElementById('wn-conn-label');
     lbl.textContent = `${conn.leftName}  →  ${conn.rightName}`;
     lbl.classList.add('active');
@@ -250,6 +273,8 @@ const WireNotes = (() => {
     if(msg){ msg.classList.add('show'); setTimeout(()=>msg.classList.remove('show'),1800); }
     SVGCanvas.redraw();
     ClusterMgr.renderList('left'); ClusterMgr.renderList('right');
+    // re-render notes panel so wire type select reflects new state
+    setTimeout(()=>WireNotes.select(connId), 60);
     LVBridge.send('event','wireNoteSaved',{id:connId,note:conn.note,label:conn.label});
   }
 
@@ -259,9 +284,14 @@ const WireNotes = (() => {
     document.getElementById('wn-conn-label').textContent='Clicca su un filo per aggiungere note';
     document.getElementById('wn-conn-label').classList.remove('active');
     document.getElementById('wnBody').innerHTML='<p class="wn-hint">Clicca su un filo nel canvas per selezionarlo e aggiungere note.</p>';
+    // collapse the notes panel
+    const panel = document.getElementById('wireNotesPanel');
+    if(panel) panel.classList.remove('wn-visible');
   }
 
-  return {select, save, deselect, getActive:()=>activeConnId};
+  function getOffset(connId){ return cardOffsets[connId]||{dx:0,dy:0}; }
+  function setOffset(connId,dx,dy){ cardOffsets[connId]={dx,dy}; }
+  return {select, save, deselect, getActive:()=>activeConnId, getOffset, setOffset};
 })();
 
 // ─── CLUSTER MANAGER ────────────────────────────────────────
@@ -509,16 +539,183 @@ const ReorderDrag = (() => {
   };
 })();
 
+
+// ─── CANVAS DEVICES (floating draggable HW boxes) ───────────
+const CanvasDevices = (() => {
+  const OVERLAY_ID = 'canvasDevOverlay';
+  let _isDragging = false;
+
+  function getOverlay(){
+    let el=document.getElementById(OVERLAY_ID);
+    if(!el){
+      el=document.createElement('div');
+      el.id=OVERLAY_ID; el.style.cssText='position:absolute;inset:0;pointer-events:none;';
+      document.getElementById('canvasContainer').appendChild(el);
+    }
+    return el;
+  }
+
+  function render(){
+    const overlay=getOverlay();
+    overlay.innerHTML='';
+    State.canvasDevices.forEach(cd=>{
+      const dev=State.devices.find(d=>d.id===cd.devId); if(!dev) return;
+      const box=document.createElement('div');
+      box.className='canvas-dev-box';
+      box.style.left=cd.x+'px'; box.style.top=cd.y+'px';
+      box.dataset.cdId=cd.id;
+
+      // header
+      const hdr=document.createElement('div');
+      hdr.className='cdb-header';
+      hdr.innerHTML=`
+        <span class="cdb-icon">${dev.icon||'🖥'}</span>
+        <span class="cdb-name">${_esc(dev.name)}</span>
+        <button class="cdb-close" onclick="CanvasDevices.remove('${cd.id}')" title="Rimuovi dal canvas">×</button>`;
+      box.appendChild(hdr);
+
+      // pins list — same style as side panel
+      const pinsDiv=document.createElement('div');
+      pinsDiv.className='cdb-pins';
+      dev.pins.forEach(pin=>{
+        const wt=State.wireTypes.find(w=>w.id===pin.wireTypeId);
+        const wireColor=wt?.color||'var(--text-muted)';
+        const connCount=State.connections.filter(c=>c.leftId===pin.id||c.rightId===pin.id).length;
+        const isMulti=connCount>1, isConn=connCount===1;
+        const item=document.createElement('div');
+        item.className='signal-item cdb-pin-item'+(isMulti?' multi-conn':isConn?' connected':'');
+        item.innerHTML=`
+          <div class="signal-anchor cdb-anchor cdb-anchor-left"  data-id="${pin.id}" data-side="right" title="← Ricevi da Sorgente (pannello sx)"></div>
+          <span class="sig-color-bar" style="background:${wireColor}"></span>
+          <span class="sig-name">${_esc(pin.name)}</span>
+          <span class="sig-type">${pin.type||''}</span>
+          ${wt?`<span class="sig-wire-badge" style="background:${wt.color};color:${_contrast(wt.color)}">${wt.name.split(' ')[0]}</span>`:''}
+          <span class="sig-conn-count${connCount>1?' visible':''}">${connCount}×</span>
+          <div class="signal-anchor cdb-anchor cdb-anchor-right" data-id="${pin.id}" data-side="left"  title="Invia a Destinazione → (pannello dx)"></div>`;
+        item.querySelectorAll('.cdb-anchor').forEach(a=>{
+          a.addEventListener('mousedown', e=>{ e.stopPropagation(); SVGCanvas.startWire(e); });
+        });
+        pinsDiv.appendChild(item);
+      });
+      box.appendChild(pinsDiv);
+
+      // drag
+      makeDraggable(box, cd);
+      overlay.appendChild(box);
+    });
+  }
+
+  function makeDraggable(box, cd){
+    const hdr=box.querySelector('.cdb-header');
+    let dragging=false, ox=0, oy=0;
+    hdr.style.cursor='grab';
+    hdr.addEventListener('mousedown',e=>{
+      if(e.target.classList.contains('cdb-close')) return;
+      e.preventDefault(); dragging=true;
+      ox=e.clientX-cd.x; oy=e.clientY-cd.y;
+      hdr.style.cursor='grabbing';
+      box.style.zIndex=999;
+      box.style.opacity='0.6';
+      box.style.transition='none';
+    });
+    document.addEventListener('mousemove',e=>{
+      if(!dragging) return;
+      cd.x=e.clientX-ox; cd.y=e.clientY-oy;
+      // update position directly — no full render to avoid destroying drag state
+      box.style.left=cd.x+'px'; box.style.top=cd.y+'px';
+      SVGCanvas.redrawWiresOnly(); // only redraw SVG wires, not the overlay
+    });
+    document.addEventListener('mouseup',()=>{
+      if(!dragging) return;
+      dragging=false;
+      hdr.style.cursor='grab';
+      box.style.zIndex='';
+      box.style.opacity='1';
+      box.style.transition='opacity .2s';
+      SVGCanvas.redraw(); // full redraw on release
+    });
+  }
+
+  function remove(cdId){
+    State.canvasDevices=State.canvasDevices.filter(cd=>cd.id!==cdId);
+    render(); SVGCanvas.redraw();
+  }
+
+  // Make canvas-pinned device pins findable by SVGCanvas.findPin
+  function findPin(id){
+    for(const cd of State.canvasDevices){
+      const dev=State.devices.find(d=>d.id===cd.devId); if(!dev) continue;
+      const p=dev.pins.find(p=>p.id===id); if(p) return p;
+    }
+    return null;
+  }
+
+  return {render, remove, findPin};
+})();
+
 // ─── SVG CANVAS ─────────────────────────────────────────────
 const SVGCanvas = (() => {
   let svg,wiresGroup,drawing=false,tempWire=null,startAnchor=null;
 
+  // Module-level card drag state (persistent across redraws)
+  let cardDrag={active:false, connId:null, ox:0, oy:0, base:{dx:0,dy:0}};
+
   function init(){
     svg=document.getElementById('wiringSvg');
     wiresGroup=document.getElementById('wiresGroup');
-    document.addEventListener('mousemove',onMouseMove);
-    document.addEventListener('mouseup',onMouseUp);
+    document.addEventListener('mousemove', e=>{
+      onMouseMove(e);
+      if(cardDrag.active){
+        const sr=svg.getBoundingClientRect();
+        const nx=e.clientX-sr.left, ny=e.clientY-sr.top;
+        WireNotes.setOffset(cardDrag.connId,
+          cardDrag.base.dx+(nx-cardDrag.ox),
+          cardDrag.base.dy+(ny-cardDrag.oy));
+        redraw();
+      }
+    });
+    document.addEventListener('mouseup', e=>{
+      onMouseUp(e);
+      if(cardDrag.active){ cardDrag.active=false; svg.style.cursor=''; }
+    });
+    // SVG mousedown delegation for card drag
+    svg.addEventListener('mousedown', e=>{
+      const cardEl=e.target.closest('[data-drag-conn]');
+      if(!cardEl) return;
+      // don't interfere with wire drawing
+      if(drawing) return;
+      e.stopPropagation();
+      const connId=cardEl.getAttribute('data-drag-conn');
+      const sr=svg.getBoundingClientRect();
+      cardDrag={
+        active:true, connId,
+        ox:e.clientX-sr.left, oy:e.clientY-sr.top,
+        base:{...WireNotes.getOffset(connId)}
+      };
+      svg.style.cursor='grabbing';
+    });
     window.addEventListener('resize',()=>setTimeout(redraw,60));
+
+    // Delete/Backspace removes selected wire
+    document.addEventListener('keydown', e=>{
+      if((e.key==='Delete'||e.key==='Backspace') && WireNotes.getActive()){
+        // avoid deleting while typing in an input/textarea
+        if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+        removeConnection(WireNotes.getActive());
+      }
+    });
+
+    // Document-level click → deselect if clicking outside protected zones
+    document.addEventListener('click', e=>{
+      if(!WireNotes.getActive()) return;
+      const outside =
+        !e.target.closest('#wireNotesPanel') &&
+        !e.target.closest('.canvas-dev-box') &&
+        !e.target.classList.contains('wire') &&
+        !e.target.classList.contains('signal-anchor') &&
+        !e.target.closest('#modalOverlay');
+      if(outside) WireNotes.deselect();
+    }, true); // capture phase so wire stopPropagation doesn't interfere
   }
 
   function getPos(el){
@@ -541,23 +738,41 @@ const SVGCanvas = (() => {
   function onMouseUp(e){
     if(!drawing) return;
     drawing=false; if(tempWire){tempWire.remove();tempWire=null;}
-    const ss=startAnchor.dataset.side,ts=ss==='left'?'right':'left';
-    const anchors=document.querySelectorAll(`#panel-${ts} .signal-anchor`);
-    for(const a of anchors){
-      const r=a.getBoundingClientRect();
-      if(e.clientX>=r.left-16&&e.clientX<=r.right+16&&e.clientY>=r.top-16&&e.clientY<=r.bottom+16){
-        const lid=ss==='left'?startAnchor.dataset.id:a.dataset.id;
-        const rid=ss==='right'?startAnchor.dataset.id:a.dataset.id;
-        addConnection(lid,rid); return;
-      }
+    const srcId   = startAnchor.dataset.id;
+    const srcRole = startAnchor.dataset.side; // 'left' = source, 'right' = destination
+
+    // Search ALL anchors in the document (panels + canvas device overlays)
+    const allAnchors = document.querySelectorAll('.signal-anchor');
+    for(const a of allAnchors){
+      if(a === startAnchor) continue;
+      const r = a.getBoundingClientRect();
+      if(e.clientX < r.left-20 || e.clientX > r.right+20 ||
+         e.clientY < r.top-20  || e.clientY > r.bottom+20) continue;
+
+      const tgtId   = a.dataset.id;
+      const tgtRole = a.dataset.side;
+
+      // Same role (left+left or right+right) = not connectable
+      if(srcRole === tgtRole) continue;
+
+      // Role determines leftId/rightId regardless of panel or canvas
+      const leftId  = srcRole === 'left' ? srcId : tgtId;
+      const rightId = srcRole === 'left' ? tgtId : srcId;
+
+      addConnection(leftId, rightId);
+      startAnchor = null;
+      return;
     }
-    startAnchor=null;
+    startAnchor = null;
   }
 
   function findPin(id){
     for(const s of['left','right'])
       for(const cl of State.clusters[s])
         for(const p of cl.pins) if(p.id===id) return p;
+    // also search canvas devices
+    const cp=CanvasDevices.findPin(id);
+    if(cp) return cp;
     return null;
   }
 
@@ -590,8 +805,9 @@ const SVGCanvas = (() => {
     wiresGroup.innerHTML='';
     const activeConn=WireNotes.getActive();
     State.connections.forEach(conn=>{
-      const la=document.querySelector(`#panel-left  .signal-anchor[data-id="${conn.leftId}"]`);
-      const ra=document.querySelector(`#panel-right .signal-anchor[data-id="${conn.rightId}"]`);
+      // search all anchors including canvas device overlays
+      const la=document.querySelector(`.signal-anchor[data-id="${conn.leftId}"]`);
+      const ra=document.querySelector(`.signal-anchor[data-id="${conn.rightId}"]`);
       if(!la||!ra) return;
       const p1=getPos(la),p2=getPos(ra);
       const wt=State.wireTypes.find(w=>w.id===conn.wireTypeId);
@@ -603,40 +819,344 @@ const SVGCanvas = (() => {
       path.setAttribute('marker-end','url(#arrowEnd)');
       setPath(path,p1.x,p1.y,p2.x,p2.y);
       // click: open notes panel
-      path.addEventListener('click',()=>WireNotes.select(conn.id));
+      // Hover preview: add 'hovered' class without selecting
+      path.addEventListener('mouseenter', ()=>{
+        if(conn.id !== WireNotes.getActive()) path.classList.add('hovered');
+      });
+      path.addEventListener('mouseleave', ()=>path.classList.remove('hovered'));
+      path.addEventListener('click', e=>{ e.stopPropagation(); WireNotes.select(conn.id); });
 
-      // label: prefer conn.label else wire type name
-      const midX=(p1.x+p2.x)/2,midY=(p1.y+p2.y)/2;
-      const labelText = conn.label || (wt?wt.name.split(' ')[0]:'');
-      if(labelText){
-        const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
-        lbl.setAttribute('x',midX); lbl.setAttribute('y',midY-7);
-        lbl.setAttribute('fill',color); lbl.setAttribute('font-size','10');
-        lbl.setAttribute('text-anchor','middle'); lbl.style.pointerEvents='none';
-        lbl.textContent=labelText;
-        wiresGroup.appendChild(lbl);
+      // ── wire labels: draggable floating card ──
+      const midX=(p1.x+p2.x)/2, midY=(p1.y+p2.y)/2;
+      const hasLabel = conn.label||conn.length||(wt?.name);
+      if(hasLabel){
+        const lines=[];
+        if(conn.label)  lines.push({txt:conn.label, bold:true,  color:color,                    size:11});
+        if(wt?.name)    lines.push({txt:wt.name,    bold:false, color:color,                    size:9});
+        if(conn.length) lines.push({txt:'📏 '+conn.length, bold:false, color:'rgba(255,255,255,.7)', size:9});
+        if(conn.note)   lines.push({txt:'📝 '+conn.note.slice(0,28)+(conn.note.length>28?'…':''),
+                                    bold:false, color:'rgba(255,255,255,.55)', size:9});
+
+        const PAD=7, LH=14;
+        const cardW=Math.max(...lines.map(l=>l.txt.length*6.2))+PAD*2+4;
+        const cardH=lines.length*LH+PAD*1.5;
+
+        // base offset: 48px right, centred vertically; user drag adds on top
+        const userOff = WireNotes.getOffset(conn.id);
+        // base: 72px right, 20px above wire midpoint → card stays clear of the wire path
+        const cx = midX + 72 + userOff.dx;
+        const cy = midY - cardH - 10 + userOff.dy;
+
+        // leader line from midpoint to card left edge centre
+        const tick=document.createElementNS('http://www.w3.org/2000/svg','line');
+        tick.setAttribute('x1',midX); tick.setAttribute('y1',midY);
+        tick.setAttribute('x2',cx);   tick.setAttribute('y2',cy+cardH/2);
+        tick.setAttribute('stroke',color); tick.setAttribute('stroke-opacity','0.4');
+        tick.setAttribute('stroke-width','1.5'); tick.setAttribute('stroke-dasharray','4 3');
+        tick.style.pointerEvents='none';
+        wiresGroup.appendChild(tick);
+
+        // card group (draggable)
+        const cardG=document.createElementNS('http://www.w3.org/2000/svg','g');
+        cardG.style.cursor='grab';
+        cardG.setAttribute('data-card-conn',conn.id);
+
+        const bg=document.createElementNS('http://www.w3.org/2000/svg','rect');
+        bg.setAttribute('x',cx); bg.setAttribute('y',cy);
+        bg.setAttribute('width',cardW); bg.setAttribute('height',cardH);
+        bg.setAttribute('rx','6'); bg.setAttribute('ry','6');
+        bg.setAttribute('fill','#1e2229'); bg.setAttribute('fill-opacity','0.93');
+        bg.setAttribute('stroke',color);  bg.setAttribute('stroke-opacity','0.6');
+        bg.setAttribute('stroke-width','1.5');
+        cardG.appendChild(bg);
+
+        lines.forEach((l,i)=>{
+          const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+          t.setAttribute('x',cx+PAD); t.setAttribute('y',cy+PAD+LH*i+LH*0.8);
+          t.setAttribute('fill',l.color); t.setAttribute('font-size',l.size);
+          t.setAttribute('font-family','Segoe UI,Arial,sans-serif');
+          if(l.bold) t.setAttribute('font-weight','700');
+          t.style.pointerEvents='none';
+          t.textContent=l.txt;
+          cardG.appendChild(t);
+        });
+
+        // mark card as draggable via data attribute — actual drag handled by SVG-level listener
+        cardG.setAttribute('data-drag-conn', conn.id);
+        cardG.style.cursor='grab';
+
+        // card appended AFTER path → renders on top of wire
+        wiresGroup.appendChild(path);
+        wiresGroup.appendChild(tick);
+        wiresGroup.appendChild(cardG);
+      } else {
+        wiresGroup.appendChild(path);
       }
-      // length label
-      if(conn.length){
-        const ll=document.createElementNS('http://www.w3.org/2000/svg','text');
-        ll.setAttribute('x',midX); ll.setAttribute('y',midY+14);
-        ll.setAttribute('fill','rgba(255,255,255,.45)'); ll.setAttribute('font-size','9');
-        ll.setAttribute('text-anchor','middle'); ll.style.pointerEvents='none';
-        ll.textContent=conn.length;
-        wiresGroup.appendChild(ll);
-      }
-      wiresGroup.appendChild(path);
     });
     document.getElementById('dropZoneMsg').style.display=State.connections.length>0?'none':'block';
     updateConnCount();
+    CanvasDevices.render();
   }
 
-  return {init,startWire,redraw,addConnection,removeConnection};
+  // Redraw only the SVG wires (no CanvasDevices.render) — used during drag
+  function redrawWiresOnly(){
+    wiresGroup.innerHTML='';
+    const activeConn=WireNotes.getActive();
+    State.connections.forEach(conn=>{
+      const la=document.querySelector(`.signal-anchor[data-id="${conn.leftId}"]`);
+      const ra=document.querySelector(`.signal-anchor[data-id="${conn.rightId}"]`);
+      if(!la||!ra) return;
+      const p1=getPos(la),p2=getPos(ra);
+      const wt=State.wireTypes.find(w=>w.id===conn.wireTypeId);
+      const color=wt?.color||'#4fc3f7';
+      const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('class','wire'+(conn.id===activeConn?' selected':''));
+      path.setAttribute('stroke',color);
+      path.setAttribute('data-conn-id',conn.id);
+      path.setAttribute('marker-end','url(#arrowEnd)');
+      path.setAttribute('d', bezier(p1.x,p1.y,p2.x,p2.y));
+      // Hover preview: add 'hovered' class without selecting
+      path.addEventListener('mouseenter', ()=>{
+        if(conn.id !== WireNotes.getActive()) path.classList.add('hovered');
+      });
+      path.addEventListener('mouseleave', ()=>path.classList.remove('hovered'));
+      path.addEventListener('click', e=>{ e.stopPropagation(); WireNotes.select(conn.id); });
+      wiresGroup.appendChild(path);
+    });
+  }
+
+  return {init,startWire,redraw,redrawWiresOnly,addConnection,removeConnection};
 })();
 
 function updateConnCount(){
   document.getElementById('connCount').textContent=`Connessioni: ${State.connections.length}`;
 }
+
+
+// ─── DEVICE MANAGER ─────────────────────────────────────────
+// Devices are HW components that can be used as clusters on either side
+const DeviceMgr = {
+
+  render(){
+    const c=document.getElementById('devContainer');
+    if(!c) return;
+    if(!State.devices.length){
+      c.innerHTML='<p class="wt-empty">Nessun dispositivo. Premi "＋ Nuovo Dispositivo".</p>'; return;
+    }
+    c.innerHTML='';
+    State.devices.forEach(dev=>{
+      const usedL = State.clusters.left.some(cl=>cl._deviceId===dev.id);
+      const usedR = State.clusters.right.some(cl=>cl._deviceId===dev.id);
+      const card=document.createElement('div');
+      card.className='dev-card';
+      card.innerHTML=`
+        <div class="dev-card-header">
+          <span class="dev-icon">${dev.icon||'🖥'}</span>
+          <span class="dev-name">${_esc(dev.name)}</span>
+          ${dev.description?`<span class="dev-desc">${_esc(dev.description)}</span>`:''}
+          <div class="dev-header-actions">
+            <span class="wt-usage-badge${usedL?' used':''}" title="Usato come Sorgente">${usedL?'✔ Sx':'Sx'}</span>
+            <span class="wt-usage-badge${usedR?' used':''}" title="Usato come Destinazione">${usedR?'✔ Dx':'Dx'}</span>
+            <button class="btn-wt-edit" onclick="DeviceMgr.addToPanel('${dev.id}','left')" title="Aggiungi a Sorgente">⬅ Usa Sx</button>
+            <button class="btn-wt-edit btn-canvas" onclick="DeviceMgr.addToCanvas('${dev.id}')" title="Posiziona nel canvas">📌 Canvas</button>
+            <button class="btn-wt-edit" onclick="DeviceMgr.addToPanel('${dev.id}','right')" title="Aggiungi a Destinazione">Usa Dx ➡</button>
+            <button class="btn-wt-edit" onclick="DeviceMgr.openEdit('${dev.id}')">✏</button>
+            <button class="btn-wt-del"  onclick="DeviceMgr.delete('${dev.id}')">🗑</button>
+          </div>
+        </div>
+        <div class="dev-pins-grid">
+          ${dev.pins.map((p,i)=>{
+            const wt=State.wireTypes.find(w=>w.id===p.wireTypeId);
+            return `<div class="dev-pin-row">
+              <button class="dev-pin-edit" onclick="DeviceMgr.openEditPin('${dev.id}','${p.id}')" title="Modifica pin">✏</button>
+              <span class="dev-pin-idx">${i+1}</span>
+              <span class="dev-pin-color" style="background:${wt?.color||'var(--text-muted)'}"></span>
+              <span class="dev-pin-name">${_esc(p.name)}</span>
+              <span class="dev-pin-type">${_esc(p.type||'')}</span>
+              <span class="dev-pin-desc">${_esc(p.description||'')}</span>
+              ${p.note?`<span class="dev-pin-note">${_esc(p.note)}</span>`:''}
+              <button class="dev-pin-del" onclick="DeviceMgr.deletePin('${dev.id}','${p.id}')">×</button>
+            </div>`;
+          }).join('')}
+          <button class="dev-addpin-btn" onclick="DeviceMgr.openAddPin('${dev.id}')">＋ Aggiungi pin</button>
+        </div>`;
+      c.appendChild(card);
+    });
+  },
+
+  openAdd(){
+    Modal.open('Nuovo Dispositivo HW',
+      `<div class="modal-row">
+         <label>Nome <input id="dv_name" placeholder="es. PLC Siemens S7-1200"/></label>
+         <label>Icona emoji <input id="dv_icon" placeholder="🖥"/></label>
+       </div>
+       <label>Descrizione <input id="dv_desc" placeholder="opzionale"/></label>`,
+      ()=>{
+        const name=document.getElementById('dv_name').value.trim(); if(!name) return false;
+        const dev={id:State.uid('dev'),name,
+          icon:document.getElementById('dv_icon').value||'🖥',
+          description:document.getElementById('dv_desc').value,
+          pins:[]};
+        State.devices.push(dev); this.render();
+        LVBridge.send('event','deviceAdded',{name});
+      },'dv_name');
+  },
+
+  openEdit(devId){
+    const dev=State.devices.find(d=>d.id===devId); if(!dev) return;
+    Modal.open(`Modifica — ${dev.name}`,
+      `<div class="modal-row">
+         <label>Nome <input id="dv_name" value="${_esc(dev.name)}"/></label>
+         <label>Icona <input id="dv_icon" value="${_esc(dev.icon||'')}"/></label>
+       </div>
+       <label>Descrizione <input id="dv_desc" value="${_esc(dev.description||'')}"/></label>`,
+      ()=>{
+        const name=document.getElementById('dv_name').value.trim(); if(!name) return false;
+        dev.name=name; dev.icon=document.getElementById('dv_icon').value||'🖥';
+        dev.description=document.getElementById('dv_desc').value;
+        this.render(); ClusterMgr.renderSelectors();
+      },'dv_name');
+  },
+
+  delete(devId){
+    const dev=State.devices.find(d=>d.id===devId); if(!dev) return;
+    if(!confirm(`Eliminare il dispositivo "${dev.name}"?
+I cluster derivati verranno rimossi.`)) return;
+    // remove derived clusters
+    ['left','right'].forEach(side=>{
+      const removed=State.clusters[side].filter(cl=>cl._deviceId===devId);
+      removed.forEach(cl=>{
+        const ids=cl.pins.map(p=>p.id);
+        State.connections=State.connections.filter(c=>!ids.includes(c.leftId)&&!ids.includes(c.rightId));
+      });
+      State.clusters[side]=State.clusters[side].filter(cl=>cl._deviceId!==devId);
+      if(!State.clusters[side].find(cl=>cl.id===State.active[side]))
+        State.active[side]=State.clusters[side][0]?.id||null;
+    });
+    State.devices=State.devices.filter(d=>d.id!==devId);
+    this.render(); ClusterMgr.renderSelectors();
+    ClusterMgr.renderList('left'); ClusterMgr.renderList('right'); SVGCanvas.redraw();
+  },
+
+  openAddPin(devId){
+    const wtOpts=State.wireTypes.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+    Modal.open('Aggiungi Pin al Dispositivo',
+      `<div class="modal-row">
+         <label>Nome pin <input id="dvp_name" placeholder="es. AI0+"/></label>
+         <label>Tipo <select id="dvp_type">${['PIN','TERMINAL','SENSOR','DAQ','PWR','GND','OTHER'].map(t=>`<option>${t}</option>`).join('')}</select></label>
+       </div>
+       <label>Tipo cavo <select id="dvp_wire"><option value="">— nessuno —</option>${wtOpts}</select></label>
+       <div class="modal-row">
+         <label>Descrizione <input id="dvp_desc" placeholder="es. Ingresso analogico"/></label>
+         <label>Note <input id="dvp_note" placeholder="opzionale"/></label>
+       </div>`,
+      ()=>{
+        const name=document.getElementById('dvp_name').value.trim(); if(!name) return false;
+        const dev=State.devices.find(d=>d.id===devId); if(!dev) return false;
+        dev.pins.push({id:State.uid('dp'),name,
+          type:document.getElementById('dvp_type').value,
+          wireTypeId:document.getElementById('dvp_wire').value||undefined,
+          description:document.getElementById('dvp_desc').value,
+          note:document.getElementById('dvp_note').value});
+        this.render();
+        // sync any derived clusters
+        this._syncDerivedClusters(devId);
+      },'dvp_name');
+  },
+
+  openEditPin(devId,pinId){
+    const dev=State.devices.find(d=>d.id===devId); if(!dev) return;
+    const pin=dev.pins.find(p=>p.id===pinId); if(!pin) return;
+    const wtOpts=State.wireTypes.map(w=>`<option value="${w.id}"${w.id===pin.wireTypeId?' selected':''}>${w.name}</option>`).join('');
+    Modal.open(`Modifica Pin — ${pin.name}`,
+      `<div class="modal-row">
+         <label>Nome pin <input id="dvp_name" value="${_esc(pin.name)}"/></label>
+         <label>Tipo <select id="dvp_type">${['PIN','TERMINAL','SENSOR','DAQ','PWR','GND','OTHER'].map(t=>`<option${t===pin.type?' selected':''}>${t}</option>`).join('')}</select></label>
+       </div>
+       <label>Tipo cavo <select id="dvp_wire"><option value="">— nessuno —</option>${wtOpts}</select></label>
+       <div class="modal-row">
+         <label>Descrizione <input id="dvp_desc" value="${_esc(pin.description||'')}"/></label>
+         <label>Note <input id="dvp_note" value="${_esc(pin.note||'')}"/></label>
+       </div>`,
+      ()=>{
+        const name=document.getElementById('dvp_name').value.trim(); if(!name) return false;
+        pin.name=name; pin.type=document.getElementById('dvp_type').value;
+        pin.wireTypeId=document.getElementById('dvp_wire').value||undefined;
+        pin.description=document.getElementById('dvp_desc').value;
+        pin.note=document.getElementById('dvp_note').value;
+        this._syncDerivedClusters(devId); this.render();
+      },'dvp_name');
+  },
+
+  deletePin(devId,pinId){
+    const dev=State.devices.find(d=>d.id===devId); if(!dev) return;
+    dev.pins=dev.pins.filter(p=>p.id!==pinId);
+    this._syncDerivedClusters(devId);
+    this.render();
+  },
+
+  // Place device as floating box in center canvas
+  addToCanvas(devId){
+    const dev=State.devices.find(d=>d.id===devId); if(!dev) return;
+    // find SVG container for initial position
+    const wrap=document.getElementById('canvasContainer');
+    const r=wrap.getBoundingClientRect();
+    const x=80+(State.canvasDevices.length%4)*30;
+    const y=80+(State.canvasDevices.length%3)*30;
+    const cd={id:State.uid('cd'), devId, x, y};
+    State.canvasDevices.push(cd);
+    CanvasDevices.render();
+    document.querySelector('.tab-btn[data-tab="wiring"]').click();
+    LVBridge.send('event','deviceOnCanvas',{devId,name:dev.name});
+  },
+
+  // Creates/updates a cluster derived from a device on the given side
+  addToPanel(devId,side){
+    const dev=State.devices.find(d=>d.id===devId); if(!dev) return;
+    // check if already there
+    const existing=State.clusters[side].find(cl=>cl._deviceId===devId);
+    if(existing){
+      State.active[side]=existing.id;
+      ClusterMgr.renderSelectors(); ClusterMgr.renderList(side);
+      // switch tab to wiring
+      document.querySelector('.tab-btn[data-tab="wiring"]').click();
+      return;
+    }
+    // clone device pins into a new cluster (shared pin ids)
+    const cl={
+      id:State.uid('cl'), name:dev.name, icon:dev.icon,
+      description:dev.description, _deviceId:devId,
+      pins:dev.pins.map(p=>({...p}))
+    };
+    State.clusters[side].push(cl);
+    State.active[side]=cl.id;
+    ClusterMgr.renderSelectors(); ClusterMgr.renderList(side);
+    this.render();
+    document.querySelector('.tab-btn[data-tab="wiring"]').click();
+    LVBridge.send('event','deviceAddedToPanel',{devId,side,name:dev.name});
+  },
+
+  _syncDerivedClusters(devId){
+    const dev=State.devices.find(d=>d.id===devId); if(!dev) return;
+    ['left','right'].forEach(side=>{
+      const cl=State.clusters[side].find(c=>c._deviceId===devId);
+      if(!cl) return;
+      cl.name=dev.name; cl.icon=dev.icon; cl.description=dev.description;
+      // add new pins not yet present
+      dev.pins.forEach(dp=>{
+        if(!cl.pins.find(p=>p.id===dp.id)) cl.pins.push({...dp});
+      });
+      // remove deleted pins
+      cl.pins=cl.pins.filter(p=>dev.pins.find(dp=>dp.id===p.id));
+      // update existing pin properties
+      cl.pins.forEach(p=>{
+        const dp=dev.pins.find(d=>d.id===p.id);
+        if(dp){ p.name=dp.name; p.type=dp.type; p.wireTypeId=dp.wireTypeId; p.description=dp.description; p.note=dp.note; }
+      });
+    });
+    ClusterMgr.renderList('left'); ClusterMgr.renderList('right'); SVGCanvas.redraw();
+  }
+};
 
 // ─── WIRING APP ─────────────────────────────────────────────
 const WiringApp = {
@@ -668,12 +1188,24 @@ const TableView = {
     </tr></thead><tbody>`;
     conns.forEach((c,i)=>{
       const wt=State.wireTypes.find(w=>w.id===c.wireTypeId);
-      const lcl=State.clusters.left.find(cl=>cl.pins.some(p=>p.id===c.leftId));
-      const rcl=State.clusters.right.find(cl=>cl.pins.some(p=>p.id===c.rightId));
+      // resolve cluster name: check panels AND canvas devices
+      const _clusterName = (pinId, side) => {
+        // side panel clusters
+        for(const cl of State.clusters[side])
+          if(cl.pins.some(p=>p.id===pinId)) return cl.name;
+        // canvas device boxes (any side)
+        for(const cd of State.canvasDevices){
+          const dev=State.devices.find(d=>d.id===cd.devId); if(!dev) continue;
+          if(dev.pins.some(p=>p.id===pinId)) return dev.name+' [canvas]';
+        }
+        return '—';
+      };
+      const leftCluster  = _clusterName(c.leftId,  'left');
+      const rightCluster = _clusterName(c.rightId, 'right');
       const sw=wt?`<span class="wire-swatch" style="background:${wt.color}"></span>${wt.name}`:'—';
       html+=`<tr><td>${i+1}</td><td>${c.label||''}</td>
-        <td>${c.leftName}</td><td>${c.leftType||'—'}</td><td>${lcl?.name||'—'}</td>
-        <td>${c.rightName}</td><td>${c.rightType||'—'}</td><td>${rcl?.name||'—'}</td>
+        <td>${c.leftName}</td><td>${c.leftType||'—'}</td><td>${leftCluster}</td>
+        <td>${c.rightName}</td><td>${c.rightType||'—'}</td><td>${rightCluster}</td>
         <td>${sw}</td><td>${wt?.color||'—'}</td><td>${wt?.section||'—'}</td><td>${wt?.voltage||'—'}</td>
         <td>${c.length||''}</td>
         <td contenteditable="true" style="min-width:120px">${c.note||''}</td></tr>`;
@@ -690,10 +1222,16 @@ const TableView = {
       const rows=[['#','Etichetta','Sorgente','Tipo Sx','Cluster Sx','Destinazione','Tipo Dx','Cluster Dx','Tipo Cavo','Colore','Sezione','Tensione','Lunghezza','Note']];
       State.connections.forEach((c,i)=>{
         const wt=State.wireTypes.find(w=>w.id===c.wireTypeId);
-        const lcl=State.clusters.left.find(cl=>cl.pins.some(p=>p.id===c.leftId));
-        const rcl=State.clusters.right.find(cl=>cl.pins.some(p=>p.id===c.rightId));
-        rows.push([i+1,c.label||'',c.leftName,c.leftType||'',lcl?.name||'',
-          c.rightName,c.rightType||'',rcl?.name||'',
+        const _cn = (pinId,side) => {
+          for(const cl of State.clusters[side]) if(cl.pins.some(p=>p.id===pinId)) return cl.name;
+          for(const cd of State.canvasDevices){
+            const dev=State.devices.find(d=>d.id===cd.devId); if(!dev) continue;
+            if(dev.pins.some(p=>p.id===pinId)) return dev.name+' [canvas]';
+          }
+          return '';
+        };
+        rows.push([i+1,c.label||'',c.leftName,c.leftType||'',_cn(c.leftId,'left'),
+          c.rightName,c.rightType||'',_cn(c.rightId,'right'),
           wt?.name||'',wt?.color||'',wt?.section||'',wt?.voltage||'',c.length||'',c.note||'']);
       });
       _dl(new Blob([rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n')],{type:'text/csv'}),fname);
@@ -787,4 +1325,4 @@ window.LV_setLog      = s=>{ try{const{enabled}=JSON.parse(s);Logger.setEnabled(
 // ─── BOOT ────────────────────────────────────────────────────
 SVGCanvas.init();
 LVBridge.init();
-LVBridge.send('event','appReady',{version:'4.0'});
+LVBridge.send('event','appReady',{version:'4.7'});

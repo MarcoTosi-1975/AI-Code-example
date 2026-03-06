@@ -13,6 +13,7 @@
     <button class="tab-btn active" data-tab="wiring">🔌 Wiring Designer</button>
     <button class="tab-btn" data-tab="table">📋 Tabella Cablaggi</button>
     <button class="tab-btn" data-tab="wiretypes">🎨 Tipi Cavo</button>
+    <button class="tab-btn" data-tab="devices">🖥 Dispositivi HW</button>
     <div class="tab-spacer"></div>
     <button class="btn-icon" onclick="ImportExport.importJSON()">⬆ Importa</button>
     <button class="btn-icon" onclick="ImportExport.saveProject()">💾 Salva</button>
@@ -123,7 +124,18 @@
     </div>
   </div>
 
-  <!-- DRAG GHOST -->
+  <!-- TAB: DEVICES -->
+  <div id="tab-devices" class="tab-content">
+    <div class="wt-toolbar">
+      <span class="wt-toolbar-title">🖥 Dispositivi Hardware</span>
+      <button class="btn-primary" onclick="DeviceMgr.openAdd()">＋ Nuovo Dispositivo</button>
+    </div>
+    <div id="devContainer" class="wt-container">
+      <p class="hint">Nessun dispositivo. Premi "＋ Nuovo Dispositivo".</p>
+    </div>
+  </div>
+
+    <!-- DRAG GHOST -->
   <div id="dragGhost" class="drag-ghost"></div>
 
   <!-- MODAL -->
